@@ -1,0 +1,227 @@
+openapi: 3.0.3
+info:
+  title: Hospital Feedback Sentiment & Analysis API
+  version: 1.0.0
+  description: |
+    API to analyze patient feedback for sentiment, topic extraction, and urgent issue flagging.
+    Uses a multilingual BERT model for sentiment analysis and LDA for topic modeling.
+
+servers:
+  - url: https://sentiment-api-akwv.onrender.com
+
+paths:
+  /predict:
+    post:
+      summary: Predict sentiment for feedback text(s)
+      description: Accepts one or multiple feedback messages and returns their sentiment labels (positive, neutral, negative).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - feedback_text
+              properties:
+                feedback_text:
+                  oneOf:
+                    - type: string
+                      description: Single feedback string
+                    - type: array
+                      items:
+                        type: string
+                      description: List of feedback strings
+              example:
+                feedback_text: "The doctor was very kind and explained everything clearly."
+      responses:
+        '200':
+          description: Sentiment prediction result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      feedback:
+                        type: string
+                        description: Original feedback text
+                      sentiment:
+                        type: string
+                        enum: [positive, neutral, negative]
+                    example:
+                      feedback: "The doctor was very kind and explained everything clearly."
+                      sentiment: positive
+                  - type: array
+                    items:
+                      type: object
+                      properties:
+                        feedback:
+                          type: string
+                        sentiment:
+                          type: string
+                          enum: [positive, neutral, negative]
+                    example:
+                      - feedback: "The staff was rude and unhelpful."
+                        sentiment: negative
+                      - feedback: "I had to wait a long time before seeing the doctor."
+                        sentiment: neutral
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                example:
+                  error: "No feedback_text provided"
+
+  /topics:
+    post:
+      summary: Extract topics from feedback texts
+      description: Extracts topics from a list of feedback messages using Latent Dirichlet Allocation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - feedback_text
+              properties:
+                feedback_text:
+                  type: array
+                  items:
+                    type: string
+                  description: List of feedback strings for topic extraction
+              example:
+                feedback_text:
+                  - "Long wait times at the front desk."
+                  - "The doctor was very professional."
+                  - "Receptionist was not helpful."
+      responses:
+        '200':
+          description: Extracted topics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        topic_id:
+                          type: integer
+                        top_words:
+                          type: array
+                          items:
+                            type: string
+                    example:
+                      - topic_id: 0
+                        top_words: ["professional", "doctor", "wait", "hour", "helpful"]
+                      - topic_id: 1
+                        top_words: ["receptionist", "desk", "long", "times", "waiting"]
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                example:
+                  error: "feedback_text must be provided as a list of feedback strings"
+        '500':
+          description: Topic extraction failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                example:
+                  error: "Topic extraction failed: [error message]"
+
+  /urgent:
+    post:
+      summary: Flag urgent or critical feedback
+      description: Flags feedback containing critical issues or red flags using keyword matching.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - feedback_text
+              properties:
+                feedback_text:
+                  type: array
+                  items:
+                    type: string
+                  description: List of feedback strings to check for urgency
+              example:
+                feedback_text:
+                  - "My grandmother was bleeding for 20 minutes before anyone helped."
+                  - "The nurse was disrespectful and ignored my request."
+                  - "The waiting room was clean and well organized."
+      responses:
+        '200':
+          description: List of flagged urgent feedback entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  urgent_feedback:
+                    type: array
+                    items:
+                      type: string
+                    description: List of feedback texts flagged as urgent
+                  count:
+                    type: integer
+                    description: Number of urgent feedback entries
+                example:
+                  urgent_feedback:
+                    - "My grandmother was bleeding for 20 minutes before anyone helped."
+                    - "The nurse was disrespectful and ignored my request."
+                  count: 2
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                example:
+                  error: "feedback_text must be provided as a list of feedback strings"
+
+components:
+  schemas:
+    FeedbackInput:
+      type: object
+      required:
+        - feedback_text
+      properties:
+        feedback_text:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+
+tags:
+  - name: Sentiment
+    description: Sentiment prediction endpoints
+  - name: Topics
+    description: Topic extraction endpoints
+  - name: Urgent
+    description: Urgency flagging endpoints
+

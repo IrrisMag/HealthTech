@@ -1,0 +1,7 @@
+flask
+transformers
+torch
+bertopic
+sentence-transformers
+gunicorn
+scikit-learn
