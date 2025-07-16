@@ -20,6 +20,7 @@ class NotificationRequest(BaseModel):
     message: str
     type: str  # 'sms' or 'voice'
 
+
 @app.post("/notifications/send")
 def send_notification(notification: NotificationRequest):
     if notification.type == "sms":
