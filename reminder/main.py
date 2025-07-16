@@ -69,6 +69,7 @@ class MedicationReminderRequest(BaseModel):
     end_date: date
     message: str = None
 
+
 def translate_message(message_type: str, message: str, lang: str, **kwargs) -> str:
     # Try translation service first
     if lang == "en":
@@ -87,6 +88,7 @@ def translate_message(message_type: str, message: str, lang: str, **kwargs) -> s
         return fallback.format(**kwargs)
     return message.format(**kwargs)
 
+
 def send_notification(to: str, body: str):
     try:
         resp = requests.post(
@@ -98,6 +100,7 @@ def send_notification(to: str, body: str):
             raise Exception(f"Notification service error: {resp.text}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send notification: {e}")
+
 
 def schedule_notification(to: str, body: str, send_time: datetime):
     job_id = f"reminder_{to}_{send_time.timestamp()}"
@@ -132,7 +135,7 @@ def create_appointment_reminder(reminder: AppointmentReminderRequest):
 def create_medication_reminder(reminder: MedicationReminderRequest):
     tz = pytz.timezone("Africa/Lagos")
     # Save to DB
-    reminders.insert_one({"type": "medication", **reminder.dict(), "created_at": datetime.utcnow()})
+    reminders.insert_one({"type": "medication", **reminder.dict(), "created_at": datetime.now()})
     # For each day in range
     current = reminder.start_date
     while current <= reminder.end_date:
@@ -141,7 +144,8 @@ def create_medication_reminder(reminder: MedicationReminderRequest):
                 hour, minute = map(int, t.split(":"))
                 send_time = tz.localize(datetime.combine(current, dt_time(hour, minute)))
                 base_msg = reminder.message or HARDCODED_TRANSLATIONS["medication"]["en"]
-                msg = translate_message("medication", base_msg, reminder.patient_language, medication_name=med.name, dosage=med.dosage)
+                msg = translate_message("medication", base_msg,
+                                        reminder.patient_language, medication_name=med.name, dosage=med.dosage)
                 # Send now if today and time is in the future
                 if current == date.today() and send_time > datetime.now(tz):
                     send_notification(reminder.patient_phone, msg)
