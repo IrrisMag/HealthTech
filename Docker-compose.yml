@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  analysis:
+    build: ./analysis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.analysis.rule=Host(`analysis.localhost`)"
+      - "traefik.http.services.analysis.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  feedback:
+    build: ./feedback
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feedback.rule=Host(`feedback.localhost`)"
+      - "traefik.http.services.feedback.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  reminder:
+    build: ./reminder
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - NOTIFICATION_SERVICE_URL=http://notification:8000/notifications/send
+      - TRANSLATION_SERVICE_URL=http://translation:8000/translate
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.reminder.rule=Host(`reminder.localhost`)"
+      - "traefik.http.services.reminder.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  forecast:
+    build: ./forecast
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.forecast.rule=Host(`forecast.localhost`)"
+      - "traefik.http.services.forecast.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  chatbot:
+    build: ./chatbot
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chatbot.rule=Host(`chatbot.localhost`)"
+      - "traefik.http.services.chatbot.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  data:
+    build: ./data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.data.rule=Host(`data.localhost`)"
+      - "traefik.http.services.data.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  optimization:
+    build: ./optimization
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.optimization.rule=Host(`optimization.localhost`)"
+      - "traefik.http.services.optimization.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  auth:
+    build: ./auth
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=Host(`auth.localhost`)"
+      - "traefik.http.services.auth.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  notification:
+    build: ./notification
+    environment:
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.notification.rule=Host(`notification.localhost`)"
+      - "traefik.http.services.notification.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  event:
+    build: ./event
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.event.rule=Host(`event.localhost`)"
+      - "traefik.http.services.event.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  translation:
+    build: ./translation
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.translation.rule=Host(`translation.localhost`)"
+      - "traefik.http.services.translation.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:6.0
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  traefik:
+    image: traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.docker=true
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+      - "8080:8080" # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  mongo_data:
