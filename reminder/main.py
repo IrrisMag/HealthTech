@@ -53,10 +53,12 @@ class AppointmentReminderRequest(BaseModel):
     appointment_time: datetime
     message: str = None
 
+
 class Medication(BaseModel):
     name: str
     dosage: str  # e.g., "1 pill"
     times: List[str]  # e.g., ["08:00", "14:00", "20:00"]
+
 
 class MedicationReminderRequest(BaseModel):
     patient_id: str
@@ -101,6 +103,7 @@ def schedule_notification(to: str, body: str, send_time: datetime):
     job_id = f"reminder_{to}_{send_time.timestamp()}"
     scheduler.add_job(send_notification, 'date', run_date=send_time, args=[to, body], id=job_id, replace_existing=True)
 
+
 @app.post("/reminders/appointment")
 def create_appointment_reminder(reminder: AppointmentReminderRequest):
     # Use GMT+1
@@ -124,6 +127,7 @@ def create_appointment_reminder(reminder: AppointmentReminderRequest):
         schedule_notification(reminder.patient_phone, msg, two_hours_before)
     return {"status": "scheduled"}
 
+
 @app.post("/reminders/medication")
 def create_medication_reminder(reminder: MedicationReminderRequest):
     tz = pytz.timezone("Africa/Lagos")
@@ -146,6 +150,7 @@ def create_medication_reminder(reminder: MedicationReminderRequest):
                     schedule_notification(reminder.patient_phone, msg, send_time)
         current += timedelta(days=1)
     return {"status": "scheduled"}
+
 
 @app.get("/reminders/")
 def list_reminders():
