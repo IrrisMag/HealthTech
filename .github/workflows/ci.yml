@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [analysis, feedback, reminder, forecast, chatbot, data, optimization, auth, notification, event, translation]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r ${{ matrix.service }}/requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 ${{ matrix.service }}/main.py --max-line-length=120
+
+      - name: Test (if tests exist)
+        run: |
+          if [ -f "${{ matrix.service }}/test_main.py" ]; then pytest ${{ matrix.service }}/test_main.py; else echo "No tests"; fi
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ matrix.service }}:ci ${{ matrix.service }}

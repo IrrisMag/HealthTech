@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env.*
+*.sqlite3
+*.db
+*.log
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+
+# PyCharm
+.idea/
+*.iml
+
+# Docker
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+**/env/
+**/venv/
+**/.venv/
+**/ENV/
+**/env.bak/
+**/venv.bak/
+docker-compose.override.yml
+
+# Test/coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+test-results/
+
+# Jupyter
+.ipynb_checkpoints
+
+# MongoDB data (if any local data dirs)
+mongo_data/
+
+# Node (if you add React/React Native)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System
+Thumbs.db
+ehthumbs.db

@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pymongo
+twilio
+python-dotenv
+apscheduler
+requests
+pytz
