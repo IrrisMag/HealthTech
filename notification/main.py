@@ -14,6 +14,7 @@ twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 app = FastAPI()
 
+
 class NotificationRequest(BaseModel):
     to: str
     message: str

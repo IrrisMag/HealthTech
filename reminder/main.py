@@ -25,6 +25,7 @@ scheduler.start()
 
 app = FastAPI()
 
+
 LANGUAGES = ["fr", "en", "bassa", "ewondo", "nguemba"]
 
 HARDCODED_TRANSLATIONS = {
@@ -43,6 +44,7 @@ HARDCODED_TRANSLATIONS = {
         "nguemba": "Wɛ́ nɛ yɔ́kɔ́ médicament : {medication_name}, {dosage}."
     }
 }
+
 
 class AppointmentReminderRequest(BaseModel):
     patient_id: str
