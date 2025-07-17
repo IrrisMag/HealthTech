@@ -271,8 +271,11 @@ def create_appointment_reminder(reminder: AppointmentReminderRequest):
 @app.post("/reminders/medication")
 def create_medication_reminder(reminder: MedicationReminderRequest):
     tz = pytz.timezone("Africa/Lagos")
-    # Save to DB
-    reminder_doc = {"type": "medication", **reminder.dict(), "created_at": datetime.now()}
+    # Convert start_date and end_date to ISO strings for MongoDB
+    reminder_data = reminder.dict()
+    reminder_data["start_date"] = reminder_data["start_date"].isoformat()
+    reminder_data["end_date"] = reminder_data["end_date"].isoformat()
+    reminder_doc = {"type": "medication", **reminder_data, "created_at": datetime.now()}
     result = reminders.insert_one(reminder_doc)
 
     # For each day in range
