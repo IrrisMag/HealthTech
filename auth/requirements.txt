@@ -1,2 +1,9 @@
 fastapi
-uvicorn[standard]
+pydantic
+pymongo
+python-dotenv
+passlib[bcrypt]
+pydantic[email]
+python-multipart
+python-jose[cryptography]
+uvicorn
