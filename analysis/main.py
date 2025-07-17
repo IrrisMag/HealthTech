@@ -12,6 +12,7 @@ app = FastAPI()
 def root():
     return {"service": "analysis"}
 
+
 # Load sentiment model from HuggingFace Hub
 sentiment_model = pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
 
