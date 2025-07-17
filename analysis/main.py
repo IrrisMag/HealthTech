@@ -32,26 +32,33 @@ URGENT_KEYWORDS = [
     "lawsuit", "legal", "court", "police", "report", "investigation", "violation", "compliance", "filed", "claim", "rights violated", "report to authorities"
 ]
 
+
 class FeedbackRequest(BaseModel):
     feedback_text: Union[str, List[str]]
 
+
 class FeedbackListRequest(BaseModel):
     feedback_text: List[str]
+
 
 class SentimentResponse(BaseModel):
     feedback: str
     sentiment: str
 
+
 class TopicResponse(BaseModel):
     topic_id: int
     top_words: List[str]
 
+
 class TopicsResponse(BaseModel):
     topics: List[TopicResponse]
+
 
 class UrgentResponse(BaseModel):
     urgent_feedback: List[str]
     count: int
+
 
 def map_sentiment(label):
     label = label.lower()
@@ -61,6 +68,7 @@ def map_sentiment(label):
         return "neutral"
     else:
         return "positive"
+
 
 def extract_topics_lda(feedbacks, n_topics=5, n_top_words=7):
     vectorizer = CountVectorizer(stop_words='english', max_df=0.95, min_df=1, lowercase=True)
@@ -85,6 +93,7 @@ def extract_topics_lda(feedbacks, n_topics=5, n_top_words=7):
     
     return topics
 
+
 @app.post("/predict")
 def predict(request: FeedbackRequest):
     feedbacks = request.feedback_text
@@ -105,6 +114,7 @@ def predict(request: FeedbackRequest):
     else:
         return results
 
+
 @app.post("/topics")
 def topics(request: FeedbackListRequest):
     feedbacks = request.feedback_text
@@ -117,6 +127,7 @@ def topics(request: FeedbackListRequest):
         return {"topics": topics}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Topic extraction failed: {str(e)}")
+
 
 @app.post("/urgent")
 def urgent(request: FeedbackListRequest):
