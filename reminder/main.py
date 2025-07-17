@@ -23,6 +23,7 @@ reminders = db["reminders"]
 scheduler = BackgroundScheduler(timezone="Africa/Lagos")  # GMT+1
 scheduler.start()
 
+
 app = FastAPI()
 
 
@@ -127,7 +128,7 @@ def create_appointment_reminder(reminder: AppointmentReminderRequest):
         doctor=reminder.doctor
     )
     # Save to DB
-    reminders.insert_one({"type": "appointment", **reminder.dict(), "created_at": datetime.utcnow()})
+    reminders.insert_one({"type": "appointment", **reminder.dict(), "created_at": datetime.now()})
     # Send now
     send_notification(reminder.patient_phone, msg)
     # Schedule 2 days before
