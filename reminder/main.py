@@ -35,12 +35,12 @@ HARDCODED_TRANSLATIONS = {
                 "Hello{name}! 😊 Just a reminder that you have an appointment on {date} at {time} "
                 "in room {room} with Dr. {doctor} at Douala General Hospital. "
                 "We're looking forward to seeing you!"
-),
+              ),
         "fr": (
                 "Bonjour{name} ! 😊 Petit rappel : vous avez un rendez-vous le {date} à {time} "
                 "dans la salle {room} avec le Dr {doctor} à l'Hopitâl Dénéral de Douala. "
                 "Nous avons hâte de vous voir !"
-),
+              ),
         "bassa": "O bɛ́ nɛ́ rendez-vous bɛ́ {date} nɛ {time}.",
         "ewondo": "O zɔ rendez-vous na {date} na {time}.",
         "nguemba": "Wɛ́ nɛ rendez-vous nɛ {date} nɛ {time}."
