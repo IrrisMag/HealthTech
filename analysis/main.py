@@ -1,5 +1,4 @@
-import os
-from typing import List, Union, Optional
+from typing import List, Union
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from transformers import pipeline
@@ -19,17 +18,23 @@ sentiment_model = pipeline("sentiment-analysis", model="nlptown/bert-base-multil
 # Define keywords to look for in urgent feedback
 URGENT_KEYWORDS = [
     # Medical emergency
-    "bleeding", "unconscious", "seizure", "stroke", "choking", "fainted", "heart attack", "cardiac", "crisis", "pain", "extreme pain", "emergency",
+    "bleeding", "unconscious", "seizure", "stroke", "choking", "fainted", "heart attack", "cardiac", "crisis", "pain",
+    "extreme pain", "emergency",
     # Neglect or mistreatment
-    "neglect", "ignored", "rude", "disrespectful", "insulting", "unresponsive", "refused", "denied", "abandoned", "abuse", "violated", "discrimination", "mistreated",
+    "neglect", "ignored", "rude", "disrespectful", "insulting", "unresponsive", "refused", "denied", "abandoned",
+    "abuse", "violated", "discrimination", "mistreated",
     # Safety and hygiene issues
-    "dirty", "unclean", "infection", "contaminated", "unsafe", "hazard", "exposed", "unsanitary", "blood", "expired", "toxic", "insect", "rats", "mold",
+    "dirty", "unclean", "infection", "contaminated", "unsafe", "hazard", "exposed", "unsanitary", "blood", "expired",
+    "toxic", "insect", "rats", "mold",
     # Admin or critical failures
-    "lost", "mistake", "error", "wrong", "incorrect", "misdiagnosed", "delay", "waiting too long", "forgotten", "wrong patient", "wrong medicine", "switched", "misplaced", "missing record", "forgot",
+    "lost", "mistake", "error", "wrong", "incorrect", "misdiagnosed", "delay", "waiting too long", "forgotten",
+    "wrong patient", "wrong medicine", "switched", "misplaced", "missing record", "forgot",
     # Violence or threats
-    "threatened", "violence", "assault", "hit", "slapped", "security issue", "fight", "attacked", "abusive language", "harassment", "intimidated",
+    "threatened", "violence", "assault", "hit", "slapped", "security issue", "fight", "attacked", "abusive language",
+    "harassment", "intimidated",
     # Legal and compliance red flags
-    "lawsuit", "legal", "court", "police", "report", "investigation", "violation", "compliance", "filed", "claim", "rights violated", "report to authorities"
+    "lawsuit", "legal", "court", "police", "report", "investigation", "violation", "compliance", "filed", "claim",
+    "rights violated", "report to authorities"
 ]
 
 
@@ -73,16 +78,16 @@ def map_sentiment(label):
 def extract_topics_lda(feedbacks, n_topics=5, n_top_words=7):
     vectorizer = CountVectorizer(stop_words='english', max_df=0.95, min_df=1, lowercase=True)
     dtm = vectorizer.fit_transform(feedbacks)
-    
+
     if dtm.shape[0] < n_topics:
         n_topics = max(1, dtm.shape[0])
-    
+
     lda = LatentDirichletAllocation(n_components=n_topics, random_state=42)
     lda.fit(dtm)
-    
+
     feature_names = vectorizer.get_feature_names_out()
     topics = []
-    
+
     for topic_idx, topic in enumerate(lda.components_):
         top_indices = topic.argsort()[:-n_top_words - 1:-1]
         top_words = [feature_names[i] for i in top_indices]
@@ -90,25 +95,25 @@ def extract_topics_lda(feedbacks, n_topics=5, n_top_words=7):
             "topic_id": topic_idx,
             "top_words": top_words
         })
-    
+
     return topics
 
 
 @app.post("/predict")
 def predict(request: FeedbackRequest):
     feedbacks = request.feedback_text
-    
+
     if isinstance(feedbacks, str):
         feedbacks = [feedbacks]
     elif not isinstance(feedbacks, list):
         raise HTTPException(status_code=400, detail="feedback_text must be a string or list of strings")
-    
+
     results = []
     for text in feedbacks:
         result = sentiment_model(text[:512])[0]
         sentiment = map_sentiment(result["label"])
         results.append({"feedback": text, "sentiment": sentiment})
-    
+
     if len(results) == 1:
         return results[0]
     else:
@@ -118,10 +123,10 @@ def predict(request: FeedbackRequest):
 @app.post("/topics")
 def topics(request: FeedbackListRequest):
     feedbacks = request.feedback_text
-    
+
     if not feedbacks or not isinstance(feedbacks, list):
         raise HTTPException(status_code=400, detail="feedback_text must be provided as a list of feedback strings")
-    
+
     try:
         topics = extract_topics_lda(feedbacks)
         return {"topics": topics}
@@ -132,16 +137,15 @@ def topics(request: FeedbackListRequest):
 @app.post("/urgent")
 def urgent(request: FeedbackListRequest):
     feedbacks = request.feedback_text
-    
+
     if not feedbacks or not isinstance(feedbacks, list):
         raise HTTPException(status_code=400, detail="feedback_text must be provided as a list of feedback strings")
-    
+
     flagged = []
     for feedback in feedbacks:
         lowered = feedback.lower()
         if any(word in lowered for word in URGENT_KEYWORDS):
             flagged.append(feedback)
-    
     return {
         "urgent_feedback": flagged,
         "count": len(flagged)
