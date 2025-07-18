@@ -10,23 +10,30 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import requests
 import pytz
 
+
 load_dotenv()
+
 
 MONGODB_URI = os.getenv("MONGODB_URI")
 DB_NAME = os.getenv("DB_NAME")
 NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://notification:8000/notifications/send")
 # TRANSLATION_SERVICE_URL removed: translation service is no longer used
 
+
 mongo_client = MongoClient(MONGODB_URI)
 db = mongo_client[DB_NAME]
 reminders = db["reminders"]
 
+
 scheduler = BackgroundScheduler(timezone="Africa/Lagos")  # GMT+1
 scheduler.start()
 
+
 app = FastAPI()
 
+
 LANGUAGES = ["fr", "en", "bassa", "ewondo", "nguemba"]
+
 
 HARDCODED_TRANSLATIONS = {
     "appointment": {
@@ -123,6 +130,7 @@ class ReminderResponse(BaseModel):
     # Additional fields will be included based on reminder type
 
 
+
 def translate_message(message_type: str, message: str, lang: str, **kwargs) -> str:
     # Use only hardcoded translations, no external translation service
     fallback = HARDCODED_TRANSLATIONS.get(message_type, {}).get(lang)
@@ -134,6 +142,7 @@ def translate_message(message_type: str, message: str, lang: str, **kwargs) -> s
         return fallback_en.format(**kwargs)
     # As a last resort, use the provided message
     return message.format(**kwargs)
+
 
 
 def send_notification(to: str, body: str):
@@ -149,9 +158,11 @@ def send_notification(to: str, body: str):
         raise HTTPException(status_code=500, detail=f"Failed to send notification: {e}")
 
 
+
 def schedule_notification(to: str, body: str, send_time: datetime):
     job_id = f"reminder_{to}_{send_time.timestamp()}"
     scheduler.add_job(send_notification, 'date', run_date=send_time, args=[to, body], id=job_id, replace_existing=True)
+
 
 
 def convert_objectid_to_str(doc):
@@ -160,6 +171,7 @@ def convert_objectid_to_str(doc):
         doc["id"] = str(doc["_id"])
         del doc["_id"]
     return doc
+
 
 
 def cancel_scheduled_jobs_for_reminder(reminder_id: str):
@@ -172,6 +184,7 @@ def cancel_scheduled_jobs_for_reminder(reminder_id: str):
                 scheduler.remove_job(job.id)
     except Exception as e:
         print(f"Error canceling jobs for reminder {reminder_id}: {e}")
+
 
 
 def reschedule_appointment_notifications(reminder_data: dict):
@@ -206,6 +219,7 @@ def reschedule_appointment_notifications(reminder_data: dict):
         schedule_notification(reminder_data["patient_phone"], msg, two_hours_before)
 
 
+
 def reschedule_medication_notifications(reminder_data: dict):
     """Reschedule medication notifications after update"""
     tz = pytz.timezone("Africa/Lagos")
@@ -233,6 +247,7 @@ def reschedule_medication_notifications(reminder_data: dict):
                 if send_time > datetime.now(tz):
                     schedule_notification(reminder_data["patient_phone"], msg, send_time)
         current += timedelta(days=1)
+
 
 
 @app.post("/reminders/appointment")
@@ -273,6 +288,7 @@ def create_appointment_reminder(reminder: AppointmentReminderRequest):
     return convert_objectid_to_str(created_reminder)
 
 
+
 @app.post("/reminders/medication")
 def create_medication_reminder(reminder: MedicationReminderRequest):
     tz = pytz.timezone("Africa/Lagos")
@@ -307,6 +323,7 @@ def create_medication_reminder(reminder: MedicationReminderRequest):
     return convert_objectid_to_str(created_reminder)
 
 
+
 # READ operations
 @app.get("/reminders/")
 def list_reminders(
@@ -329,6 +346,7 @@ def list_reminders(
     return result
 
 
+
 @app.get("/reminders/{reminder_id}")
 def get_reminder(reminder_id: str):
     """Get a specific reminder by ID"""
@@ -342,6 +360,7 @@ def get_reminder(reminder_id: str):
         raise HTTPException(status_code=404, detail="Reminder not found")
 
     return convert_objectid_to_str(reminder)
+
 
 
 # UPDATE operations
@@ -378,6 +397,7 @@ def update_appointment_reminder(reminder_id: str, update_data: AppointmentRemind
     reschedule_appointment_notifications(updated_reminder)
 
     return convert_objectid_to_str(updated_reminder)
+
 
 
 @app.put("/reminders/medication/{reminder_id}")
@@ -423,6 +443,7 @@ def update_medication_reminder(reminder_id: str, update_data: MedicationReminder
     return convert_objectid_to_str(updated_reminder)
 
 
+
 # DELETE operations
 @app.delete("/reminders/{reminder_id}")
 def delete_reminder(reminder_id: str):
@@ -448,6 +469,7 @@ def delete_reminder(reminder_id: str):
     return {"message": "Reminder deleted successfully", "deleted_id": reminder_id}
 
 
+
 @app.delete("/reminders/patient/{patient_id}")
 def delete_patient_reminders(patient_id: str):
     """Delete all reminders for a specific patient"""
@@ -467,6 +489,7 @@ def delete_patient_reminders(patient_id: str):
     }
 
 
+
 # Additional utility endpoints
 @app.get("/reminders/patient/{patient_id}")
 def get_patient_reminders(patient_id: str):
@@ -476,6 +499,7 @@ def get_patient_reminders(patient_id: str):
     for doc in cursor:
         result.append(convert_objectid_to_str(doc))
     return result
+
 
 
 @app.get("/reminders/stats")
@@ -499,3 +523,4 @@ def get_reminder_stats():
         "language_distribution": language_stats,
         "active_scheduled_jobs": len(scheduler.get_jobs())
     }
+

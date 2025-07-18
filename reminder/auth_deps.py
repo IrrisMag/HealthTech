@@ -3,6 +3,7 @@ import requests
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://auth:8000/auth/login")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth:8000")
 
@@ -23,6 +24,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except Exception:
         raise credentials_exception
 
+
 def require_roles(*roles):
     def checker(user=Depends(get_current_user)):
         user_role = user.get("role", None)
@@ -30,3 +32,4 @@ def require_roles(*roles):
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         return user
     return checker
+

@@ -2,6 +2,7 @@ from enum import Enum
 from datetime import datetime
 from typing import Optional
 
+
 class UserRole(str, Enum):
     ADMIN = "admin"
     DOCTOR = "doctor"
@@ -9,7 +10,9 @@ class UserRole(str, Enum):
     STAFF = "staff"
     PATIENT = "patient"
 
+
 class UserInDB:
+
     def __init__(self, id: int, email: str, full_name: str, role: UserRole,
                  employee_id: Optional[str], department: Optional[str],
                  is_active: bool, created_at: datetime, hashed_password: str):
@@ -22,3 +25,4 @@ class UserInDB:
         self.is_active = is_active
         self.created_at = created_at
         self.hashed_password = hashed_password
+
