@@ -1,6 +1,0 @@
-fastapi
-uvicorn[standard]
-transformers
-scikit-learn
-torch
-pydantic

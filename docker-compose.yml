@@ -1,15 +1,14 @@
 version: '3.8'
 
 services:
-  analysis:
-    build: ./analysis
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.analysis.rule=Host(`analysis.localhost`)"
-      - "traefik.http.services.analysis.loadbalancer.server.port=8000"
-    depends_on:
-      - mongo
-
+#  analysis:
+#    build: ./analysis
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.analysis.rule=Host(`analysis.localhost`)"
+#      - "traefik.http.services.analysis.loadbalancer.server.port=8000"
+#    depends_on:
+#      - mongo
   feedback:
     build: ./feedback
     labels:
@@ -110,6 +109,45 @@ services:
       - "traefik.http.services.translation.loadbalancer.server.port=8000"
     depends_on:
       - mongo
+
+  feedback-ui-service:
+    build: ./feedback-reminder-system/feedback-ui-service
+    environment:
+      - NEXT_PUBLIC_FEEDBACK_API_URL=http://feedback.localhost
+      - NEXT_PUBLIC_AUTH_API_URL=http://auth.localhost
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feedback-ui.rule=Host(`feedback-ui.localhost`)"
+      - "traefik.http.services.feedback-ui.loadbalancer.server.port=3000"
+    depends_on:
+      - feedback
+      - auth
+
+  reminder-ui-service:
+    build: ./feedback-reminder-system/reminder-service
+    environment:
+      - NEXT_PUBLIC_REMINDER_API_URL=http://reminder.localhost
+      - NEXT_PUBLIC_AUTH_API_URL=http://auth.localhost
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.reminder-ui.rule=Host(`reminder-ui.localhost`)"
+      - "traefik.http.services.reminder-ui.loadbalancer.server.port=3000"
+    depends_on:
+      - reminder
+      - auth
+
+  mobile:
+    build: ./feedback-reminder-system/mobile
+    environment:
+      - NEXT_PUBLIC_FEEDBACK_API_URL=http://feedback.localhost
+      - NEXT_PUBLIC_AUTH_API_URL=http://auth.localhost
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feedback-mobile.rule=Host(`feedback-mobile.localhost`)"
+      - "traefik.http.services.feedback-mobile.loadbalancer.server.port=3000"
+    depends_on:
+      - feedback
+      - auth
 
   mongo:
     image: mongo:6.0

@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://auth:8000/auth/login")
-JWT_SECRET = os.getenv("JWT_SECRET", "your_jwt_secret_here")
+JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 def get_current_user(token: str = Depends(oauth2_scheme)):

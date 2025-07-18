@@ -1,11 +1,11 @@
 import os
+import requests
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://auth:8000/auth/login")
-JWT_SECRET = os.getenv("JWT_SECRET", "your_jwt_secret_here")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth:8000")
+
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
@@ -14,9 +14,13 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return payload
-    except JWTError:
+        # Call the auth service to validate the token and get user info
+        resp = requests.get(f"{AUTH_SERVICE_URL}/users/me", headers={"Authorization": f"Bearer {token}"}, timeout=5)
+        if resp.status_code == 200:
+            return resp.json()
+        else:
+            raise credentials_exception
+    except Exception:
         raise credentials_exception
 
 def require_roles(*roles):
