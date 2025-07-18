@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any
 
 import motor.motor_asyncio
 from bson import ObjectId
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from textblob import TextBlob
@@ -17,14 +17,20 @@ logger = logging.getLogger(__name__)
 
 
 # MongoDB configuration
-MONGODB_URL = "mongodb+srv://farelrick22:feedback@cluster0.5v3qw9e.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+MONGODB_URL = (
+    "mongodb+srv://farelrick22:feedback@cluster0.5v3qw9e.mongodb.net/"
+    "?retryWrites=true&w=majority&appName=Cluster0"
+)
 DATABASE_NAME = "feedback"
 
 
 # Initialize FastAPI app
 app = FastAPI(
     title="Patient Feedback Microservice",
-    description="Multilingual patient feedback collection and analysis system for Douala General Hospital",
+    description=(
+        "Multilingual patient feedback collection and analysis system "
+        "for Douala General Hospital"
+    ),
     version="1.0.0"
 )
 
@@ -96,7 +102,6 @@ class SentimentType(str, Enum):
     NEUTRAL = "neutral"
 
 
-
 class FeedbackInput(BaseModel):
     patient_id: Optional[str] = None
     text_feedback: Optional[str] = None
@@ -107,7 +112,6 @@ class FeedbackInput(BaseModel):
     department: Optional[str] = None
     visit_date: Optional[datetime] = None
     contact_info: Optional[str] = None
-
 
 
 class FeedbackResponse(BaseModel):
@@ -126,7 +130,6 @@ class FeedbackResponse(BaseModel):
     processed_at: Optional[datetime]
 
 
-
 class AnalyticsResponse(BaseModel):
     total_feedback: int
     sentiment_distribution: Dict[str, int]
@@ -135,7 +138,6 @@ class AnalyticsResponse(BaseModel):
     feedback_by_department: Dict[str, int]
     feedback_by_language: Dict[str, int]
     priority_distribution: Dict[str, int]
-
 
 
 # Utility functions
@@ -152,9 +154,8 @@ async def check_db_connection():
     try:
         await asyncio.wait_for(client.admin.command('ping'), timeout=5.0)
         return True
-    except:
+    except Exception:
         return False
-
 
 
 # Database health check endpoint
@@ -176,17 +177,38 @@ class FeedbackAnalyzer:
 
     def __init__(self):
         self.priority_keywords = {
-            "urgent": ["emergency", "urgent", "critical", "pain", "bleeding", "dying"],
-            "high": ["long wait", "delayed", "rude", "unprofessional", "dirty", "broken"],
-            "medium": ["slow", "crowded", "noisy", "uncomfortable", "confusing"],
-            "low": ["good", "excellent", "satisfied", "clean", "professional", "helpful"]
+            "urgent": [
+                "emergency", "urgent", "critical", "pain", "bleeding", "dying"
+            ],
+            "high": [
+                "long wait", "delayed", "rude", "unprofessional", "dirty",
+                "broken"
+            ],
+            "medium": [
+                "slow", "crowded", "noisy", "uncomfortable", "confusing"
+            ],
+            "low": [
+                "good", "excellent", "satisfied", "clean", "professional",
+                "helpful"
+            ]
         }
 
         self.category_keywords = {
-            "waiting_time": ["wait", "queue", "delay", "slow", "time", "attente", "retard"],
-            "staff": ["doctor", "nurse", "staff", "personnel", "médecin", "infirmier"],
-            "facilities": ["clean", "dirty", "room", "equipment", "facility", "propre", "sale"],
-            "appointment": ["appointment", "schedule", "booking", "rendez-vous", "planifier"]
+            "waiting_time": [
+                "wait", "queue", "delay", "slow", "time", "attente", "retard"
+            ],
+            "staff": [
+                "doctor", "nurse", "staff", "personnel", "médecin",
+                "infirmier"
+            ],
+            "facilities": [
+                "clean", "dirty", "room", "equipment", "facility", "propre",
+                "sale"
+            ],
+            "appointment": [
+                "appointment", "schedule", "booking", "rendez-vous",
+                "planifier"
+            ]
         }
 
 
@@ -229,15 +251,18 @@ class FeedbackAnalyzer:
             blob = TextBlob(text)
             pos_tags = blob.tags
             for word, pos in pos_tags:
-                if pos in ['NN', 'NNS', 'JJ', 'JJR', 'JJS'] and len(word) > 3:
+                if (pos in ['NN', 'NNS', 'JJ', 'JJR', 'JJS'] and
+                        len(word) > 3):
                     keywords.append(word.lower())
         except Exception as e:
             logger.error(f"Keyword extraction error: {e}")
 
-        return list(set(keywords))[:10]  # Return top 10 unique keywords
+        # Return top 10 unique keywords
+        return list(set(keywords))[:10]
 
 
-    def determine_priority(self, text: str, rating: Optional[int], sentiment: str) -> str:
+    def determine_priority(self, text: str, rating: Optional[int],
+                           sentiment: str) -> str:
         """Determine priority level based on content and rating"""
         if not text:
             text = ""
@@ -279,16 +304,22 @@ async def startup_db_client():
         for attempt in range(max_retries):
             try:
                 # Test connection with timeout
-                await asyncio.wait_for(client.admin.command('ping'), timeout=10.0)
+                await asyncio.wait_for(
+                    client.admin.command('ping'), timeout=10.0
+                )
                 logger.info("Connected to MongoDB successfully")
                 break
             except asyncio.TimeoutError:
-                logger.warning(f"Connection attempt {attempt + 1} timed out")
+                logger.warning(
+                    f"Connection attempt {attempt + 1} timed out"
+                )
                 if attempt == max_retries - 1:
                     raise
                 await asyncio.sleep(2)
             except Exception as e:
-                logger.warning(f"Connection attempt {attempt + 1} failed: {e}")
+                logger.warning(
+                    f"Connection attempt {attempt + 1} failed: {e}"
+                )
                 if attempt == max_retries - 1:
                     raise
                 await asyncio.sleep(2)
@@ -324,7 +355,10 @@ async def shutdown_db_client():
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {"message": "Patient Feedback Microservice is running", "status": "healthy"}
+    return {
+        "message": "Patient Feedback Microservice is running",
+        "status": "healthy"
+    }
 
 
 @app.post("/feedback", response_model=FeedbackResponse)
@@ -332,9 +366,15 @@ async def submit_feedback(feedback: FeedbackInput):
     """Submit new patient feedback"""
     try:
         # Analyze feedback
-        sentiment = analyzer.analyze_sentiment(feedback.text_feedback or "", feedback.language)
-        keywords = analyzer.extract_keywords(feedback.text_feedback or "", feedback.language)
-        priority = analyzer.determine_priority(feedback.text_feedback or "", feedback.rating, sentiment)
+        sentiment = analyzer.analyze_sentiment(
+            feedback.text_feedback or "", feedback.language
+        )
+        keywords = analyzer.extract_keywords(
+            feedback.text_feedback or "", feedback.language
+        )
+        priority = analyzer.determine_priority(
+            feedback.text_feedback or "", feedback.rating, sentiment
+        )
 
         # Create feedback document
         feedback_doc = {
@@ -358,13 +398,17 @@ async def submit_feedback(feedback: FeedbackInput):
         result = await feedback_collection.insert_one(feedback_doc)
 
         # Retrieve created document
-        created_feedback = await feedback_collection.find_one({"_id": result.inserted_id})
+        created_feedback = await feedback_collection.find_one(
+            {"_id": result.inserted_id}
+        )
         
         return FeedbackResponse(**convert_objectid(created_feedback))
 
     except Exception as e:
         logger.error(f"Error submitting feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to submit feedback")
+        raise HTTPException(
+            status_code=500, detail="Failed to submit feedback"
+        )
 
 
 @app.get("/feedback", response_model=List[FeedbackResponse])

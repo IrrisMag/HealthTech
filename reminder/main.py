@@ -16,7 +16,9 @@ load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI")
 DB_NAME = os.getenv("DB_NAME")
-NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://notification:8000/notifications/send")
+NOTIFICATION_SERVICE_URL = os.getenv(
+    "NOTIFICATION_SERVICE_URL", "http://notification:8000/notifications/send"
+)
 # TRANSLATION_SERVICE_URL removed: translation service is no longer used
 
 
@@ -30,6 +32,8 @@ scheduler.start()
 
 
 app = FastAPI()
+
+
 
 
 LANGUAGES = ["fr", "en", "bassa", "ewondo", "nguemba"]
@@ -65,9 +69,11 @@ HARDCODED_TRANSLATIONS = {
     },
     "medication": {
         "en": "Hi{name}! 🌟 It's time to take your medication: {medication_name}, {dosage}. Take care of yourself!",
-        "fr": "Bonjour{name} ! 🌟 Il est temps de prendre votre médicament : {medication_name}, {dosage}. Prenez soin de vous !",
+        "fr": ("Bonjour{name} ! 🌟 Il est temps de prendre votre médicament : {medication_name}, {dosage}."
+               "Prenez soin de vous !"),
         "bassa": "Mbolo{name} ! 🌟 Nda'a, o bɛ́ nɛ́ yɔ́kɔ́ médicament : {medication_name}, {dosage}. Nda'a, o bɛ́ nɛ́ yɔ́kɔ́ !",
-        "ewondo": "Mbembe{name} ! 🌟 Nda'a, o bɛ́ nɛ́ yɔ́kɔ́ médicament : {medication_name}, {dosage}. Nda'a, o bɛ́ nɛ́ yɔ́kɔ́ !",
+        "ewondo": ("Mbembe{name} ! 🌟 Nda'a, o bɛ́ nɛ́ yɔ́kɔ́ médicament : {medication_name}, {dosage}."
+                   "Nda'a, o bɛ́ nɛ́ yɔ́kɔ́ !"),
         "nguemba": "Wɛ́{name} ! 🌟 Nda'a, wɛ́ nɛ yɔ́kɔ́ médicament : {medication_name}, {dosage}. Nda'a, wɛ́ nɛ yɔ́kɔ́ !"
     }
 }
@@ -219,7 +225,6 @@ def reschedule_appointment_notifications(reminder_data: dict):
         schedule_notification(reminder_data["patient_phone"], msg, two_hours_before)
 
 
-
 def reschedule_medication_notifications(reminder_data: dict):
     """Reschedule medication notifications after update"""
     tz = pytz.timezone("Africa/Lagos")
@@ -247,7 +252,6 @@ def reschedule_medication_notifications(reminder_data: dict):
                 if send_time > datetime.now(tz):
                     schedule_notification(reminder_data["patient_phone"], msg, send_time)
         current += timedelta(days=1)
-
 
 
 @app.post("/reminders/appointment")
@@ -288,7 +292,6 @@ def create_appointment_reminder(reminder: AppointmentReminderRequest):
     return convert_objectid_to_str(created_reminder)
 
 
-
 @app.post("/reminders/medication")
 def create_medication_reminder(reminder: MedicationReminderRequest):
     tz = pytz.timezone("Africa/Lagos")
@@ -323,7 +326,6 @@ def create_medication_reminder(reminder: MedicationReminderRequest):
     return convert_objectid_to_str(created_reminder)
 
 
-
 # READ operations
 @app.get("/reminders/")
 def list_reminders(
@@ -346,7 +348,6 @@ def list_reminders(
     return result
 
 
-
 @app.get("/reminders/{reminder_id}")
 def get_reminder(reminder_id: str):
     """Get a specific reminder by ID"""
@@ -360,7 +361,6 @@ def get_reminder(reminder_id: str):
         raise HTTPException(status_code=404, detail="Reminder not found")
 
     return convert_objectid_to_str(reminder)
-
 
 
 # UPDATE operations
@@ -397,7 +397,6 @@ def update_appointment_reminder(reminder_id: str, update_data: AppointmentRemind
     reschedule_appointment_notifications(updated_reminder)
 
     return convert_objectid_to_str(updated_reminder)
-
 
 
 @app.put("/reminders/medication/{reminder_id}")
@@ -523,4 +522,3 @@ def get_reminder_stats():
         "language_distribution": language_stats,
         "active_scheduled_jobs": len(scheduler.get_jobs())
     }
-
