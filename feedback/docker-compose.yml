@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  feedback-api:
+    build: .
+    container_name: feedback-microservice
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb+srv://farelrick22:feedback@cluster0.5v3qw9e.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - DATABASE_NAME=feedbackm
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - feedback-network
+
+  # Optional: Add a reverse proxy (nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: feedback-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - feedback-api
+    restart: unless-stopped
+    networks:
+      - feedback-network
+
+networks:
+  feedback-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local
