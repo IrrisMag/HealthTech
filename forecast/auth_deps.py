@@ -7,6 +7,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://auth:8000/auth/login")
 JWT_SECRET = os.getenv("JWT_SECRET", "your_jwt_secret_here")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
+
 def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -19,10 +20,13 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
+
 def require_roles(*roles):
     def checker(user=Depends(get_current_user)):
         user_roles = user.get("roles", [])
         if not any(role in user_roles for role in roles):
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
+            raise HTTPException(
+                status_code=403, detail="Insufficient permissions"
+            )
         return user
     return checker

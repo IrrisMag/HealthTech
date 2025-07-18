@@ -211,16 +211,13 @@ class FeedbackAnalyzer:
             ]
         }
 
-
     def analyze_sentiment(self, text: str, language: str) -> str:
         """Analyze sentiment using TextBlob"""
         try:
             if not text:
                 return "neutral"
-            
             blob = TextBlob(text)
             polarity = blob.sentiment.polarity
-            
             if polarity > 0.1:
                 return "positive"
             elif polarity < -0.1:
@@ -230,7 +227,6 @@ class FeedbackAnalyzer:
         except Exception as e:
             logger.error(f"Sentiment analysis error: {e}")
             return "neutral"
-
 
     def extract_keywords(self, text: str, language: str) -> List[str]:
         """Extract relevant keywords from feedback text"""
@@ -259,7 +255,6 @@ class FeedbackAnalyzer:
 
         # Return top 10 unique keywords
         return list(set(keywords))[:10]
-
 
     def determine_priority(self, text: str, rating: Optional[int],
                            sentiment: str) -> str:
@@ -291,7 +286,6 @@ class FeedbackAnalyzer:
 
 # Initialize analyzer
 analyzer = FeedbackAnalyzer()
-
 
 
 # Database startup event
@@ -350,7 +344,6 @@ async def shutdown_db_client():
         logger.error(f"Error closing database connection: {e}")
 
 
-
 # API Routes
 @app.get("/")
 async def root():
@@ -401,7 +394,6 @@ async def submit_feedback(feedback: FeedbackInput):
         created_feedback = await feedback_collection.find_one(
             {"_id": result.inserted_id}
         )
-        
         return FeedbackResponse(**convert_objectid(created_feedback))
 
     except Exception as e:
@@ -437,14 +429,20 @@ async def get_feedback(
             query["department"] = department
 
         # Execute query
-        cursor = feedback_collection.find(query).skip(skip).limit(limit).sort("created_at", -1)
+        cursor = feedback_collection.find(query).skip(skip).limit(limit).sort(
+            "created_at", -1
+        )
         feedback_list = await cursor.to_list(length=limit)
 
-        return [FeedbackResponse(**convert_objectid(doc)) for doc in feedback_list]
+        return [
+            FeedbackResponse(**convert_objectid(doc)) for doc in feedback_list
+        ]
 
     except Exception as e:
         logger.error(f"Error retrieving feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve feedback"
+        )
 
 
 @app.get("/feedback/{feedback_id}", response_model=FeedbackResponse)
@@ -452,9 +450,13 @@ async def get_feedback_by_id(feedback_id: str):
     """Get specific feedback by ID"""
     try:
         if not ObjectId.is_valid(feedback_id):
-            raise HTTPException(status_code=400, detail="Invalid feedback ID")
+            raise HTTPException(
+                status_code=400, detail="Invalid feedback ID"
+            )
 
-        feedback_doc = await feedback_collection.find_one({"_id": ObjectId(feedback_id)})
+        feedback_doc = await feedback_collection.find_one(
+            {"_id": ObjectId(feedback_id)}
+        )
         if not feedback_doc:
             raise HTTPException(status_code=404, detail="Feedback not found")
 
@@ -464,7 +466,9 @@ async def get_feedback_by_id(feedback_id: str):
         raise
     except Exception as e:
         logger.error(f"Error retrieving feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve feedback"
+        )
 
 
 @app.get("/analytics", response_model=AnalyticsResponse)
@@ -477,7 +481,6 @@ async def get_analytics(
         # Build date filter
         from datetime import timedelta
         start_date = datetime.utcnow() - timedelta(days=days)
-        
         match_stage = {"created_at": {"$gte": start_date}}
         if department:
             match_stage["department"] = department
@@ -497,7 +500,9 @@ async def get_analytics(
             }}
         ]
 
-        result = await feedback_collection.aggregate(pipeline).to_list(length=1)
+        result = await feedback_collection.aggregate(pipeline).to_list(
+            length=1
+        )
 
         if not result:
             return AnalyticsResponse(
@@ -532,7 +537,9 @@ async def get_analytics(
 
         top_keywords = [
             {"keyword": k, "count": v}
-            for k, v in sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+            for k, v in sorted(
+                keyword_counts.items(), key=lambda x: x[1], reverse=True
+            )[:10]
         ]
 
         # Process departments
@@ -563,21 +570,29 @@ async def get_analytics(
 
     except Exception as e:
         logger.error(f"Error generating analytics: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate analytics")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate analytics"
+        )
 
 
 @app.get("/feedback/urgent", response_model=List[FeedbackResponse])
 async def get_urgent_feedback():
     """Get urgent feedback requiring immediate attention"""
     try:
-        cursor = feedback_collection.find({"priority": "urgent"}).sort("created_at", -1)
+        cursor = feedback_collection.find({"priority": "urgent"}).sort(
+            "created_at", -1
+        )
         urgent_feedback = await cursor.to_list(length=100)
-        
-        return [FeedbackResponse(**convert_objectid(doc)) for doc in urgent_feedback]
+        return [
+            FeedbackResponse(**convert_objectid(doc))
+            for doc in urgent_feedback
+        ]
 
     except Exception as e:
         logger.error(f"Error retrieving urgent feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve urgent feedback")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve urgent feedback"
+        )
 
 
 @app.delete("/feedback/{feedback_id}")
@@ -585,9 +600,13 @@ async def delete_feedback(feedback_id: str):
     """Delete specific feedback"""
     try:
         if not ObjectId.is_valid(feedback_id):
-            raise HTTPException(status_code=400, detail="Invalid feedback ID")
+            raise HTTPException(
+                status_code=400, detail="Invalid feedback ID"
+            )
 
-        result = await feedback_collection.delete_one({"_id": ObjectId(feedback_id)})
+        result = await feedback_collection.delete_one(
+            {"_id": ObjectId(feedback_id)}
+        )
 
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Feedback not found")
@@ -598,7 +617,9 @@ async def delete_feedback(feedback_id: str):
         raise
     except Exception as e:
         logger.error(f"Error deleting feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete feedback")
+        raise HTTPException(
+            status_code=500, detail="Failed to delete feedback"
+        )
 
 if __name__ == "__main__":
     import uvicorn

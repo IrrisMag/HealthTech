@@ -2,6 +2,7 @@ from app.database.connection import db
 from app.security.password import get_password_hash
 from app.models.user import UserRole
 
+
 def create_default_admin():
     users_collection = db["users"]
     admin_user = users_collection.find_one({"email": "admin@hospital.com"})
@@ -17,6 +18,7 @@ def create_default_admin():
             "is_active": True,
             "created_at": None
         })
+
 
 def setup_database():
     create_default_admin()

@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+
 
 class Settings(BaseSettings):
     # Security
@@ -8,7 +8,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # Database
-    MONGODB_URI: str = "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority&appName=<cluster>"
+    MONGODB_URI: str = (
+        "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/"
+        "?retryWrites=true&w=majority&appName=<cluster>"
+    )
     DB_NAME: str = "reminderdb"
 
     # Application
@@ -17,5 +20,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()

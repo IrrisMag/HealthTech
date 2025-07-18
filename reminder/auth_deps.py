@@ -16,7 +16,11 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     )
     try:
         # Call the auth service to validate the token and get user info
-        resp = requests.get(f"{AUTH_SERVICE_URL}/users/me", headers={"Authorization": f"Bearer {token}"}, timeout=5)
+        resp = requests.get(
+            f"{AUTH_SERVICE_URL}/users/me",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5
+        )
         if resp.status_code == 200:
             return resp.json()
         else:
@@ -29,7 +33,8 @@ def require_roles(*roles):
     def checker(user=Depends(get_current_user)):
         user_role = user.get("role", None)
         if user_role not in roles:
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
+            raise HTTPException(
+                status_code=403, detail="Insufficient permissions"
+            )
         return user
     return checker
-

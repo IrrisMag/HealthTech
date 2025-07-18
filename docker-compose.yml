@@ -1,14 +1,14 @@
 version: '3.8'
 
 services:
-#  analysis:
-#    build: ./analysis
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.analysis.rule=Host(`analysis.localhost`)"
-#      - "traefik.http.services.analysis.loadbalancer.server.port=8000"
-#    depends_on:
-#      - mongo
+  analysis:
+    build: ./analysis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.analysis.rule=Host(`analysis.localhost`)"
+      - "traefik.http.services.analysis.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
   feedback:
     build: ./feedback
     labels:

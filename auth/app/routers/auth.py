@@ -7,6 +7,7 @@ from app.models.user import UserRole
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
+
 @router.post("/register", response_model=dict)
 async def register_user(user: UserCreate):
     # Check if user already exists
@@ -26,6 +27,7 @@ async def register_user(user: UserCreate):
 
     user_id = create_user(user)
     return {"message": "User registered successfully", "user_id": user_id}
+
 
 @router.post("/login", response_model=Token)
 async def login(user_credentials: UserLogin):

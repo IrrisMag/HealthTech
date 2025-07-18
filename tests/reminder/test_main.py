@@ -1,8 +1,8 @@
-import pytest
 from fastapi.testclient import TestClient
 from reminder.main import app
 
 client = TestClient(app)
+
 
 def test_appointment_reminder():
     data = {

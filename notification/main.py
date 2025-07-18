@@ -32,7 +32,9 @@ def send_notification(notification: NotificationRequest):
             )
             return {"status": "sent"}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Twilio SMS error: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Twilio SMS error: {e}"
+            )
     elif notification.type == "voice":
         try:
             # Twilio will call and read out the message using text-to-speech
@@ -44,6 +46,10 @@ def send_notification(notification: NotificationRequest):
             )
             return {"status": "call placed", "sid": call.sid}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Twilio Voice error: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Twilio Voice error: {e}"
+            )
     else:
-        raise HTTPException(status_code=400, detail="Unsupported notification type")
+        raise HTTPException(
+            status_code=400, detail="Unsupported notification type"
+        )

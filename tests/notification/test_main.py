@@ -1,8 +1,8 @@
-import pytest
 from fastapi.testclient import TestClient
 from notification.main import app
 
 client = TestClient(app)
+
 
 def test_send_notification(monkeypatch):
     def mock_post(*args, **kwargs):

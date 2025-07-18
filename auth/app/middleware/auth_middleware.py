@@ -8,7 +8,10 @@ from app.security.jwt_handler import verify_token
 
 security = HTTPBearer()
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -43,6 +46,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         is_active=user.is_active,
         created_at=user.created_at
     )
+
 
 def require_roles(allowed_roles: List[UserRole]):
     def role_checker(current_user: User = Depends(get_current_user)):

@@ -1,0 +1,363 @@
+import requests
+import json
+import time
+from datetime import datetime, timedelta
+from typing import Dict, Any
+import random
+
+# Configuration
+BASE_URL = "http://localhost:8000"
+HEADERS = {"Content-Type": "application/json"}
+
+# Test data
+SAMPLE_FEEDBACK = [
+    {
+        "patient_id": "P001",
+        "text_feedback": "The waiting time was too long, I waited for 3 hours to see the doctor. The staff was rude and unprofessional.",
+        "rating": 2,
+        "feedback_type": "waiting_time",
+        "language": "en",
+        "department": "Emergency",
+        "visit_date": "2024-01-15T10:00:00Z",
+        "contact_info": "patient1@email.com"
+    },
+    {
+        "patient_id": "P002",
+        "text_feedback": "Excellent service! The doctor was very professional and explained everything clearly. Clean facilities.",
+        "rating": 5,
+        "feedback_type": "general",
+        "language": "en",
+        "department": "General Medicine",
+        "visit_date": "2024-01-16T14:30:00Z",
+        "contact_info": "patient2@email.com"
+    },
+    {
+        "patient_id": "P003",
+        "text_feedback": "Le personnel médical était très gentil et professionnel. L'hôpital était propre et bien organisé.",
+        "rating": 4,
+        "feedback_type": "staff",
+        "language": "fr",
+        "department": "Pediatrics",
+        "visit_date": "2024-01-17T09:15:00Z",
+        "contact_info": "patient3@email.com"
+    },
+    {
+        "patient_id": "P004",
+        "text_feedback": "URGENT: Patient bleeding heavily in emergency ward! Need immediate attention!",
+        "rating": 1,
+        "feedback_type": "general",
+        "language": "en",
+        "department": "Emergency",
+        "visit_date": "2024-01-18T16:45:00Z",
+        "contact_info": "emergency@email.com"
+    },
+    {
+        "patient_id": "P005",
+        "text_feedback": "Appointment scheduling system is confusing and slow. Had to wait 2 weeks for an appointment.",
+        "rating": 3,
+        "feedback_type": "appointment",
+        "language": "en",
+        "department": "Cardiology",
+        "visit_date": "2024-01-19T11:20:00Z",
+        "contact_info": "patient5@email.com"
+    }
+]
+
+class FeedbackAPITester:
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self.created_feedback_ids = []
+        
+    def print_separator(self, title: str):
+        print(f"\n{'='*60}")
+        print(f"  {title}")
+        print(f"{'='*60}")
+    
+    def print_result(self, endpoint: str, method: str, status_code: int, response_data: Any = None):
+        status_emoji = "✅" if 200 <= status_code < 300 else "❌"
+        print(f"{status_emoji} {method} {endpoint} - Status: {status_code}")
+        
+        if response_data:
+            if isinstance(response_data, dict):
+                print(f"   Response: {json.dumps(response_data, indent=2)[:200]}...")
+            else:
+                print(f"   Response: {str(response_data)[:200]}...")
+        print()
+    
+    def test_health_endpoints(self):
+        """Test health check endpoints"""
+        self.print_separator("HEALTH CHECK ENDPOINTS")
+        
+        # Test root endpoint
+        try:
+            response = requests.get(f"{self.base_url}/")
+            self.print_result("/", "GET", response.status_code, response.json())
+        except Exception as e:
+            print(f"❌ GET / - Error: {e}")
+        
+        # Test database health
+        try:
+            response = requests.get(f"{self.base_url}/health/db")
+            self.print_result("/health/db", "GET", response.status_code, response.json())
+        except Exception as e:
+            print(f"❌ GET /health/db - Error: {e}")
+    
+    def test_submit_feedback(self):
+        """Test feedback submission endpoint"""
+        self.print_separator("SUBMIT FEEDBACK TESTS")
+        
+        for i, feedback_data in enumerate(SAMPLE_FEEDBACK, 1):
+            try:
+                response = requests.post(
+                    f"{self.base_url}/feedback",
+                    headers=HEADERS,
+                    json=feedback_data
+                )
+                
+                if response.status_code == 200:
+                    feedback_id = response.json().get("id")
+                    if feedback_id:
+                        self.created_feedback_ids.append(feedback_id)
+                
+                self.print_result(f"/feedback (Sample {i})", "POST", response.status_code, response.json())
+                
+            except Exception as e:
+                print(f"❌ POST /feedback (Sample {i}) - Error: {e}")
+    
+    def test_get_feedback(self):
+        """Test getting feedback with various filters"""
+        self.print_separator("GET FEEDBACK TESTS")
+        
+        test_cases = [
+            ("Get all feedback", {}),
+            ("Get feedback with limit", {"limit": 3}),
+            ("Get feedback with skip", {"skip": 1, "limit": 2}),
+            ("Filter by sentiment", {"sentiment": "negative"}),
+            ("Filter by priority", {"priority": "urgent"}),
+            ("Filter by feedback_type", {"feedback_type": "general"}),
+            ("Filter by language", {"language": "en"}),
+            ("Filter by department", {"department": "Emergency"}),
+        ]
+        
+        for test_name, params in test_cases:
+            try:
+                response = requests.get(
+                    f"{self.base_url}/feedback",
+                    params=params
+                )
+                
+                result_data = response.json() if response.status_code == 200 else response.text
+                print(f"✅ {test_name} - Status: {response.status_code}")
+                
+                if response.status_code == 200 and isinstance(result_data, list):
+                    print(f"   Found {len(result_data)} feedback items")
+                    if result_data:
+                        print(f"   Sample: {result_data[0].get('text_feedback', 'N/A')[:50]}...")
+                else:
+                    print(f"   Response: {str(result_data)[:100]}...")
+                print()
+                
+            except Exception as e:
+                print(f"❌ {test_name} - Error: {e}")
+    
+    def test_get_feedback_by_id(self):
+        """Test getting specific feedback by ID"""
+        self.print_separator("GET FEEDBACK BY ID TESTS")
+        
+        if not self.created_feedback_ids:
+            print("❌ No feedback IDs available for testing")
+            return
+        
+        # Test valid ID
+        try:
+            feedback_id = self.created_feedback_ids[0]
+            response = requests.get(f"{self.base_url}/feedback/{feedback_id}")
+            self.print_result(f"/feedback/{feedback_id}", "GET", response.status_code, response.json())
+        except Exception as e:
+            print(f"❌ GET /feedback/{feedback_id} - Error: {e}")
+        
+        # Test invalid ID
+        try:
+            invalid_id = "invalid_id_123"
+            response = requests.get(f"{self.base_url}/feedback/{invalid_id}")
+            self.print_result(f"/feedback/{invalid_id}", "GET", response.status_code, response.json())
+        except Exception as e:
+            print(f"❌ GET /feedback/{invalid_id} - Error: {e}")
+    
+    def test_urgent_feedback(self):
+        """Test urgent feedback endpoint"""
+        self.print_separator("URGENT FEEDBACK TESTS")
+        
+        try:
+            response = requests.get(f"{self.base_url}/feedback/urgent")
+            
+            if response.status_code == 200:
+                urgent_feedback = response.json()
+                print(f"✅ GET /feedback/urgent - Status: {response.status_code}")
+                print(f"   Found {len(urgent_feedback)} urgent feedback items")
+                
+                for feedback in urgent_feedback:
+                    print(f"   - {feedback.get('text_feedback', 'N/A')[:50]}...")
+            else:
+                self.print_result("/feedback/urgent", "GET", response.status_code, response.json())
+                
+        except Exception as e:
+            print(f"❌ GET /feedback/urgent - Error: {e}")
+    
+    def test_analytics(self):
+        """Test analytics endpoint"""
+        self.print_separator("ANALYTICS TESTS")
+        
+        test_cases = [
+            ("Default analytics", {}),
+            ("Last 7 days", {"days": 7}),
+            ("Last 60 days", {"days": 60}),
+            ("Emergency department", {"department": "Emergency"}),
+            ("Emergency dept last 7 days", {"days": 7, "department": "Emergency"}),
+        ]
+        
+        for test_name, params in test_cases:
+            try:
+                response = requests.get(
+                    f"{self.base_url}/analytics",
+                    params=params
+                )
+                
+                print(f"✅ {test_name} - Status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    analytics = response.json()
+                    print(f"   Total feedback: {analytics.get('total_feedback', 0)}")
+                    print(f"   Average rating: {analytics.get('average_rating', 0)}")
+                    print(f"   Sentiment distribution: {analytics.get('sentiment_distribution', {})}")
+                    print(f"   Top keywords: {len(analytics.get('top_keywords', []))}")
+                else:
+                    print(f"   Response: {response.text[:100]}...")
+                print()
+                
+            except Exception as e:
+                print(f"❌ {test_name} - Error: {e}")
+    
+    def test_delete_feedback(self):
+        """Test deleting feedback"""
+        self.print_separator("DELETE FEEDBACK TESTS")
+        
+        if not self.created_feedback_ids:
+            print("❌ No feedback IDs available for testing")
+            return
+        
+        # Test valid deletion
+        if len(self.created_feedback_ids) > 1:
+            try:
+                feedback_id = self.created_feedback_ids.pop()  # Remove one from list
+                response = requests.delete(f"{self.base_url}/feedback/{feedback_id}")
+                self.print_result(f"/feedback/{feedback_id}", "DELETE", response.status_code, response.json())
+            except Exception as e:
+                print(f"❌ DELETE /feedback/{feedback_id} - Error: {e}")
+        
+        # Test invalid deletion
+        try:
+            invalid_id = "invalid_id_456"
+            response = requests.delete(f"{self.base_url}/feedback/{invalid_id}")
+            self.print_result(f"/feedback/{invalid_id}", "DELETE", response.status_code, response.json())
+        except Exception as e:
+            print(f"❌ DELETE /feedback/{invalid_id} - Error: {e}")
+    
+    def test_error_scenarios(self):
+        """Test error scenarios"""
+        self.print_separator("ERROR SCENARIO TESTS")
+        
+        # Test invalid JSON
+        try:
+            response = requests.post(
+                f"{self.base_url}/feedback",
+                headers=HEADERS,
+                data="invalid json"
+            )
+            self.print_result("/feedback (Invalid JSON)", "POST", response.status_code, response.text)
+        except Exception as e:
+            print(f"❌ POST /feedback (Invalid JSON) - Error: {e}")
+        
+        # Test missing required fields
+        try:
+            incomplete_feedback = {
+                "text_feedback": "This is incomplete"
+                # Missing required fields
+            }
+            response = requests.post(
+                f"{self.base_url}/feedback",
+                headers=HEADERS,
+                json=incomplete_feedback
+            )
+            self.print_result("/feedback (Incomplete)", "POST", response.status_code, response.text)
+        except Exception as e:
+            print(f"❌ POST /feedback (Incomplete) - Error: {e}")
+        
+        # Test invalid rating
+        try:
+            invalid_rating_feedback = {
+                "rating": 10,  # Invalid rating (should be 1-5)
+                "feedback_type": "general",
+                "language": "en",
+                "text_feedback": "Invalid rating test"
+            }
+            response = requests.post(
+                f"{self.base_url}/feedback",
+                headers=HEADERS,
+                json=invalid_rating_feedback
+            )
+            self.print_result("/feedback (Invalid Rating)", "POST", response.status_code, response.text)
+        except Exception as e:
+            print(f"❌ POST /feedback (Invalid Rating) - Error: {e}")
+    
+    def run_all_tests(self):
+        """Run all tests"""
+        print(f"🚀 Starting API Tests for {self.base_url}")
+        print(f"⏰ Test started at: {datetime.now()}")
+        
+        try:
+            self.test_health_endpoints()
+            self.test_submit_feedback()
+            time.sleep(1)  # Brief pause to let data settle
+            self.test_get_feedback()
+            self.test_get_feedback_by_id()
+            self.test_urgent_feedback()
+            self.test_analytics()
+            self.test_delete_feedback()
+            self.test_error_scenarios()
+            
+            self.print_separator("TEST SUMMARY")
+            print(f"✅ All tests completed!")
+            print(f"📊 Created {len(self.created_feedback_ids)} feedback items")
+            print(f"⏰ Test completed at: {datetime.now()}")
+            
+        except KeyboardInterrupt:
+            print("\n❌ Tests interrupted by user")
+        except Exception as e:
+            print(f"\n❌ Unexpected error during testing: {e}")
+
+def main():
+    """Main function to run the tests"""
+    print("🔧 Feedback Microservice API Tester")
+    print("=" * 60)
+    
+    # Check if server is running
+    try:
+        response = requests.get(f"{BASE_URL}/", timeout=5)
+        if response.status_code == 200:
+            print("✅ Server is running and accessible")
+        else:
+            print(f"⚠️  Server responded with status: {response.status_code}")
+    except requests.exceptions.ConnectionError:
+        print("❌ Cannot connect to server. Make sure it's running on http://localhost:8000")
+        return
+    except Exception as e:
+        print(f"❌ Error connecting to server: {e}")
+        return
+    
+    # Run tests
+    tester = FeedbackAPITester(BASE_URL)
+    tester.run_all_tests()
+
+if __name__ == "__main__":
+    main()

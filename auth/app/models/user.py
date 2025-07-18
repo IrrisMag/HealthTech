@@ -25,4 +25,3 @@ class UserInDB:
         self.is_active = is_active
         self.created_at = created_at
         self.hashed_password = hashed_password
-
