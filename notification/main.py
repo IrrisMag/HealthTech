@@ -14,6 +14,10 @@ twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 app = FastAPI()
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "notification"}
+
 
 class NotificationRequest(BaseModel):
     to: str

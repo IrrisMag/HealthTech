@@ -16,13 +16,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# MongoDB configuration
-MONGODB_URL = (
-    "mongodb+srv://farelrick22:feedback@cluster0.5v3qw9e.mongodb.net/"
-    "?retryWrites=true&w=majority&appName=Cluster0"
-)
-DATABASE_NAME = "feedback"
-
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -33,6 +26,10 @@ app = FastAPI(
     ),
     version="1.0.0"
 )
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "feedback"}
 
 
 # CORS middleware

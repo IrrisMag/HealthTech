@@ -5,23 +5,70 @@ services:
     image: mongo:6.0
     restart: always
     ports:
-      - "27017:27017"
+      - "27019:27017"  # Different port to avoid conflicts
     volumes:
-      - mongo_data:/data/db
+      - mongo_data_track3:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    environment:
+      - MONGO_INITDB_DATABASE=admin
+    command: mongod --replSet rs0 --bind_ip_all
 
   auth:
     build: ./auth
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME_AUTH:-reminderdb_auth}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth-track3.rule=Host(`auth-track3.localhost`)"
+      - "traefik.http.services.auth-track3.loadbalancer.server.port=8000"
     depends_on:
       - mongo
 
   analysis:
     build: ./analysis
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME_ANALYSIS:-reminderdb_analysis}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # Analytics specific environment variables
+      - PANDAS_VERSION=${PANDAS_VERSION:-latest}
+      - NUMPY_VERSION=${NUMPY_VERSION:-latest}
+      - SCIKIT_LEARN_VERSION=${SCIKIT_LEARN_VERSION:-latest}
+      - DATA_SERVICE_URL=${DATA_SERVICE_URL:-http://data:8000}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.analysis.rule=Host(`analysis.localhost`)"
+      - "traefik.http.services.analysis.loadbalancer.server.port=8000"
     depends_on:
       - mongo
       - auth
+      - data
 
   data:
     build: ./data
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME_DATA:-reminderdb_data}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # Data processing specific environment variables
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-100MB}
+      - ALLOWED_FILE_TYPES=${ALLOWED_FILE_TYPES:-csv,json,xlsx}
+      - DATA_RETENTION_DAYS=${DATA_RETENTION_DAYS:-2555}  # 7 years for healthcare
+      - ENCRYPTION_ENABLED=${ENCRYPTION_ENABLED:-true}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.data.rule=Host(`data.localhost`)"
+      - "traefik.http.services.data.loadbalancer.server.port=8000"
     depends_on:
       - mongo
       - auth
@@ -33,10 +80,10 @@ services:
       - --providers.docker=true
       - --entrypoints.web.address=:80
     ports:
-      - "80:80"
-      - "8080:8080"
+      - "82:80"      # Different port to avoid conflicts
+      - "8082:8080"  # Different dashboard port
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
 volumes:
-  mongo_data:
+  mongo_data_track3:

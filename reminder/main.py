@@ -19,7 +19,6 @@ DB_NAME = os.getenv("DB_NAME")
 NOTIFICATION_SERVICE_URL = os.getenv(
     "NOTIFICATION_SERVICE_URL", "http://notification:8000/notifications/send"
 )
-# TRANSLATION_SERVICE_URL removed: translation service is no longer used
 
 
 mongo_client = MongoClient(MONGODB_URI)
@@ -32,6 +31,10 @@ scheduler.start()
 
 
 app = FastAPI()
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "reminder"}
 
 LANGUAGES = ["fr", "en", "bassa", "ewondo", "nguemba"]
 

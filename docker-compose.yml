@@ -3,6 +3,11 @@ version: '3.8'
 services:
   analysis:
     build: ./analysis
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_ANALYSIS}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.analysis.rule=Host(`analysis.localhost`)"
@@ -11,6 +16,11 @@ services:
       - mongo
   feedback:
     build: ./feedback
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_FEEDBACK}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.feedback.rule=Host(`feedback.localhost`)"
@@ -22,10 +32,13 @@ services:
     build: ./reminder
     environment:
       - MONGODB_URI=${MONGODB_URI}
-      - DB_NAME=${DB_NAME}
+      - DB_NAME=${DB_NAME_REMINDER}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
       - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
-      - NOTIFICATION_SERVICE_URL=http://notification:8000/notifications/send
+      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
       - TRANSLATION_SERVICE_URL=http://translation:8000/translate
     labels:
       - "traefik.enable=true"
@@ -36,6 +49,11 @@ services:
 
   forecast:
     build: ./forecast
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_FORECAST}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.forecast.rule=Host(`forecast.localhost`)"
@@ -45,6 +63,11 @@ services:
 
   chatbot:
     build: ./chatbot
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_CHATBOT}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.chatbot.rule=Host(`chatbot.localhost`)"
@@ -54,6 +77,11 @@ services:
 
   data:
     build: ./data
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_DATA}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.data.rule=Host(`data.localhost`)"
@@ -63,6 +91,11 @@ services:
 
   optimization:
     build: ./optimization
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_OPTIMIZATION}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.optimization.rule=Host(`optimization.localhost`)"
@@ -72,6 +105,11 @@ services:
 
   auth:
     build: ./auth
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_AUTH}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.auth.rule=Host(`auth.localhost`)"
@@ -82,9 +120,13 @@ services:
   notification:
     build: ./notification
     environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_NOTIFICATION}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
-      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.notification.rule=Host(`notification.localhost`)"
@@ -94,6 +136,11 @@ services:
 
   event:
     build: ./event
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_EVENT}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.event.rule=Host(`event.localhost`)"
@@ -103,6 +150,11 @@ services:
 
   translation:
     build: ./translation
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME_TRANSLATION}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=${ENVIRONMENT}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.translation.rule=Host(`translation.localhost`)"
@@ -110,11 +162,15 @@ services:
     depends_on:
       - mongo
 
+
   feedback-ui-service:
     build: ./feedback-reminder-system/feedback-ui-service
     environment:
-      - NEXT_PUBLIC_FEEDBACK_API_URL=http://feedback.localhost
       - NEXT_PUBLIC_AUTH_API_URL=http://auth.localhost
+      - NEXT_PUBLIC_FEEDBACK_API_URL=http://feedback.localhost
+      - NEXT_PUBLIC_REMINDER_API_URL=http://reminder.localhost
+      - NEXT_PUBLIC_NOTIFICATION_API_URL=http://notification.localhost
+      - NEXT_PUBLIC_TRANSLATION_API_URL=http://translation.localhost
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.feedback-ui.rule=Host(`feedback-ui.localhost`)"
@@ -123,28 +179,21 @@ services:
       - feedback
       - auth
 
-  reminder-ui-service:
-    build: ./feedback-reminder-system/reminder-service
-    environment:
-      - NEXT_PUBLIC_REMINDER_API_URL=http://reminder.localhost
-      - NEXT_PUBLIC_AUTH_API_URL=http://auth.localhost
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.reminder-ui.rule=Host(`reminder-ui.localhost`)"
-      - "traefik.http.services.reminder-ui.loadbalancer.server.port=3000"
-    depends_on:
-      - reminder
-      - auth
 
   mobile:
     build: ./feedback-reminder-system/mobile
     environment:
-      - NEXT_PUBLIC_FEEDBACK_API_URL=http://feedback.localhost
-      - NEXT_PUBLIC_AUTH_API_URL=http://auth.localhost
+      - EXPO_PUBLIC_AUTH_API_URL=http://auth.localhost
+      - EXPO_PUBLIC_FEEDBACK_API_URL=http://feedback.localhost
+      - EXPO_PUBLIC_REMINDER_API_URL=http://reminder.localhost
+      - EXPO_PUBLIC_NOTIFICATION_API_URL=http://notification.localhost
+      - EXPO_PUBLIC_TRANSLATION_API_URL=http://translation.localhost
+    ports:
+      - "19006:19006"  # Expo web port
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.feedback-mobile.rule=Host(`feedback-mobile.localhost`)"
-      - "traefik.http.services.feedback-mobile.loadbalancer.server.port=3000"
+      - "traefik.http.services.feedback-mobile.loadbalancer.server.port=19006"
     depends_on:
       - feedback
       - auth

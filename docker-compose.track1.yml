@@ -8,32 +8,97 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    environment:
+      - MONGO_INITDB_DATABASE=admin
+    command: mongod --replSet rs0 --bind_ip_all
 
   auth:
     build: ./auth
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME_AUTH:-reminderdb_auth}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=Host(`auth.localhost`)"
+      - "traefik.http.services.auth.loadbalancer.server.port=8000"
     depends_on:
       - mongo
 
   reminder:
     build: ./reminder
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME_REMINDER:-reminderdb_reminder}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification:8000/notifications/send}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.reminder.rule=Host(`reminder.localhost`)"
+      - "traefik.http.services.reminder.loadbalancer.server.port=8000"
     depends_on:
       - mongo
       - auth
 
   feedback:
     build: ./feedback
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME_FEEDBACK:-reminderdb_feedback}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feedback.rule=Host(`feedback.localhost`)"
+      - "traefik.http.services.feedback.loadbalancer.server.port=8000"
     depends_on:
       - mongo
       - auth
 
   notification:
     build: ./notification
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME_NOTIFICATION:-reminderdb_notification}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.notification.rule=Host(`notification.localhost`)"
+      - "traefik.http.services.notification.loadbalancer.server.port=8000"
     depends_on:
       - mongo
       - auth
 
   translation:
     build: ./translation
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME_TRANSLATION:-reminderdb_translation}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.translation.rule=Host(`translation.localhost`)"
+      - "traefik.http.services.translation.loadbalancer.server.port=8000"
     depends_on:
       - mongo
       - auth
@@ -44,6 +109,8 @@ services:
       - --api.insecure=true
       - --providers.docker=true
       - --entrypoints.web.address=:80
+      - --accesslog=true
+      - --log.level=INFO
     ports:
       - "80:80"
       - "8080:8080"

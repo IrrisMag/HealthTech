@@ -1,12 +1,22 @@
-# Dockerfile for Next.js frontend (mobile)
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN yarn install --frozen-lockfile || npm install
-RUN yarn build || npm run build
+# Dockerfile for Expo React Native mobile app
+FROM node:20-alpine
 
-FROM node:20-alpine AS runner
+# Install Expo CLI globally
+RUN npm install -g @expo/cli
+
 WORKDIR /app
-COPY --from=builder /app ./
-EXPOSE 3000
-CMD ["yarn", "start"]
+
+# Copy package files
+COPY package*.json yarn.lock* ./
+
+# Install dependencies
+RUN yarn install --frozen-lockfile || npm install
+
+# Copy source code
+COPY . .
+
+# Expose port for Expo web
+EXPOSE 19006
+
+# Start Expo web server
+CMD ["yarn", "web"]
