@@ -1,41 +1,40 @@
-import { View, Text, Dimensions } from "react-native";
+import { View, Dimensions } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Canvas, Path, Skia } from "@shopify/react-native-skia";
 
-type Props = {};
+interface WaveProps {
+  isActive?: boolean;
+  height?: number;
+  waveCount?: number;
+}
 
-const wave = (props: Props) => {
+const Wave = ({ isActive = true, height = 120, waveCount = 4 }: WaveProps) => {
   const { width } = Dimensions.get("screen");
-
-  const height = 200;
   const centerY = height / 2;
-  const waveCount = 5;
-
   const [time, setTime] = useState(0);
 
   useEffect(() => {
+    if (!isActive) return;
+    
     let frameId: number;
     const animate = () => {
-      setTime((t) => t + 1);
+      setTime((t) => t + 2);
       frameId = requestAnimationFrame(animate);
     };
     animate();
     return () => cancelAnimationFrame(frameId);
-  }, []);
+  }, [isActive]);
 
   const generateWavePath = (amp: number, freq: number, phaseShift: number) => {
     const path = Skia.Path.Make();
     path.moveTo(0, centerY);
 
-    for (let x = 0; x <= width; x += 2) {
-      // Create envelope that peaks in the middle and tapers at both ends
-      const normalizedX = x / width; // 0 to 1
-      const envelope = Math.sin(normalizedX * Math.PI); // Bell curve: 0 -> 1 -> 0
-      const adjustedAmp = amp * envelope;
+    for (let x = 0; x <= width - 32; x += 2) {
+      const normalizedX = x / (width - 32);
+      const envelope = Math.sin(normalizedX * Math.PI);
+      const adjustedAmp = amp * envelope * (isActive ? 1 : 0.3);
 
-      const y =
-        centerY +
-        adjustedAmp * Math.sin(((freq * x + phaseShift) * Math.PI) / 180);
+      const y = centerY + adjustedAmp * Math.sin(((freq * x + phaseShift) * Math.PI) / 180);
       path.lineTo(x, y);
     }
 
@@ -44,10 +43,11 @@ const wave = (props: Props) => {
 
   const waves = [];
   for (let i = 0; i < waveCount; i++) {
-    const amplitude = 10 + i * 5;
-    const frequency = 1.5 + i * 0.3;
-    const phase = (time * (1 + i * 0.1)) % 360;
-    const color = `rgba(0, 173, 255, ${0.1 + 0.15 * (waveCount - i)})`;
+    const amplitude = 8 + i * 4;
+    const frequency = 1.2 + i * 0.2;
+    const phase = (time * (0.8 + i * 0.1)) % 360;
+    const opacity = isActive ? 0.15 + 0.2 * (waveCount - i) : 0.05;
+    const color = `rgba(59, 130, 246, ${opacity})`;
 
     waves.push({
       path: generateWavePath(amplitude, frequency, phase),
@@ -56,18 +56,20 @@ const wave = (props: Props) => {
   }
 
   return (
-    <Canvas style={{ width, height, marginHorizontal: "auto" }}>
-      {waves.map((wave, index) => (
-        <Path
-          key={index}
-          path={wave.path}
-          color={wave.color}
-          style="stroke"
-          strokeWidth={2}
-        />
-      ))}
-    </Canvas>
+    <View className="items-center">
+      <Canvas style={{ width: width - 32, height }}>
+        {waves.map((wave, index) => (
+          <Path
+            key={index}
+            path={wave.path}
+            color={wave.color}
+            style="stroke"
+            strokeWidth={2}
+          />
+        ))}
+      </Canvas>
+    </View>
   );
 };
 
-export default wave;
+export default Wave;

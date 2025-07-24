@@ -12,10 +12,15 @@ export default function Home() {
           <p className="text-xl text-gray-600 mb-8">
             Douala General Hospital - Patient Feedback & Management System
           </p>
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 flex-wrap">
             <Link href="/feedback">
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                 📝 Submit Feedback
+              </Button>
+            </Link>
+            <Link href="/chatbot">
+              <Button size="lg" className="bg-green-600 hover:bg-green-700">
+                🤖 Health Assistant
               </Button>
             </Link>
             <Link href="/analytics">
@@ -37,10 +42,10 @@ export default function Home() {
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
             <h3 className="text-lg font-semibold mb-3 flex items-center">
-              📱 Smart Reminders
+              🤖 AI Health Assistant
             </h3>
             <p className="text-gray-600">
-              SMS and voice reminders for appointments and medications with multi-language support
+              Get instant answers to health questions with our AI chatbot powered by medical documents
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
@@ -54,12 +59,13 @@ export default function Home() {
         </div>
 
         <div className="mt-16 bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-6">🎯 Track 1 Features</h2>
+          <h2 className="text-2xl font-bold text-center mb-6">🎯 Platform Features</h2>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-semibold text-green-600 mb-2">✅ Currently Available:</h4>
               <ul className="space-y-1 text-sm text-gray-600">
                 <li>• Patient feedback submission with sentiment analysis</li>
+                <li>• AI health assistant with medical document knowledge</li>
                 <li>• Real-time analytics dashboard</li>
                 <li>• SMS notifications via Twilio</li>
                 <li>• Appointment and medication reminders</li>
@@ -70,10 +76,11 @@ export default function Home() {
             <div>
               <h4 className="font-semibold text-blue-600 mb-2">🚀 System Status:</h4>
               <ul className="space-y-1 text-sm text-gray-600">
-                <li>• Backend Services: <span className="text-green-600 font-medium">5/5 Running</span></li>
+                <li>• Backend Services: <span className="text-green-600 font-medium">6/6 Running</span></li>
                 <li>• Database: <span className="text-green-600 font-medium">Connected</span></li>
                 <li>• SMS Service: <span className="text-green-600 font-medium">Active</span></li>
                 <li>• AI Analysis: <span className="text-green-600 font-medium">Operational</span></li>
+                <li>• Chatbot Service: <span className="text-green-600 font-medium">Online</span></li>
                 <li>• Frontend: <span className="text-green-600 font-medium">Deployed</span></li>
               </ul>
             </div>
