@@ -7,7 +7,7 @@ name = "healthtech-platform"
 version = "1.0.0"
 description = "HealthTech Platform for Douala General Hospital"
 authors = [
-    {name = "HealthTech Team", email = "dev@healthtech.com"}
+    {name = "HealthTech Team", email = "magneirris@mail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"
