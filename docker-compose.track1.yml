@@ -5,7 +5,7 @@ services:
     image: mongo:6.0
     restart: always
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongo_data:/data/db
       - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
@@ -103,6 +103,10 @@ services:
       - mongo
       - auth
 
+# Frontend runs locally outside Docker
+  # Start with: cd feedback-reminder-system/feedback-ui-service && npm run dev
+  # Access at: http://localhost:3000
+
   traefik:
     image: traefik:v2.10
     command:
@@ -112,8 +116,8 @@ services:
       - --accesslog=true
       - --log.level=INFO
     ports:
-      - "80:80"
-      - "8080:8080"
+      - "8001:80"
+      - "8081:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 

@@ -1,4 +1,4 @@
-n#!/bin/bash
+#!/bin/bash
 
 # HealthTech Platform - Track 3 Deployment
 # Services: Auth, Analysis, Data

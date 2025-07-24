@@ -1,0 +1,63 @@
+[flake8]
+max-line-length = 120
+max-complexity = 10
+extend-ignore = 
+    E203,  # whitespace before ':'
+    E501,  # line too long (handled by black)
+    W503,  # line break before binary operator
+    W504,  # line break after binary operator
+    F401,  # imported but unused (in __init__.py files)
+    E402,  # module level import not at top of file (for conditional imports)
+
+exclude = 
+    .git,
+    __pycache__,
+    build,
+    dist,
+    *.egg-info,
+    .venv,
+    .env,
+    env,
+    venv,
+    node_modules,
+    migrations,
+    .pytest_cache,
+    .mypy_cache,
+    .coverage,
+    htmlcov,
+    .tox,
+    .nox
+
+per-file-ignores =
+    __init__.py:F401,F403
+    */settings.py:E501
+    */config.py:E501
+    test_*.py:S101,S311
+    *_test.py:S101,S311
+
+# Specific rules
+select = 
+    E,  # pycodestyle errors
+    W,  # pycodestyle warnings
+    F,  # pyflakes
+    C,  # mccabe complexity
+    B,  # flake8-bugbear
+    I,  # isort
+
+# Import order
+import-order-style = google
+application-import-names = 
+    auth,
+    feedback,
+    reminder,
+    notification,
+    translation,
+    analysis,
+    data,
+    optimization,
+    chatbot,
+    event,
+    forecast
+
+# Docstring conventions
+docstring-convention = google

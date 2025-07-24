@@ -44,7 +44,7 @@ sleep 15
 echo -e "${BLUE}🏥 Performing health checks...${NC}"
 
 # Check auth service
-if curl -f -s http://auth.localhost/health > /dev/null 2>&1; then
+if curl -f -s http://auth.localhost:8001/health > /dev/null 2>&1; then
     echo -e "${GREEN}✅ Auth service is healthy${NC}"
 else
     echo -e "${YELLOW}⚠️  Auth service health check failed${NC}"
@@ -53,7 +53,7 @@ fi
 # Check other services
 services=("reminder" "feedback" "notification" "translation")
 for service in "${services[@]}"; do
-    if curl -f -s http://${service}.localhost/health > /dev/null 2>&1; then
+    if curl -f -s http://${service}.localhost:8001/health > /dev/null 2>&1; then
         echo -e "${GREEN}✅ ${service^} service is healthy${NC}"
     else
         echo -e "${YELLOW}⚠️  ${service^} service health check failed${NC}"
@@ -67,12 +67,13 @@ docker-compose -f docker-compose.track1.yml ps
 echo -e "${GREEN}🎉 Track 1 deployment completed!${NC}"
 echo ""
 echo -e "${BLUE}📍 Available endpoints:${NC}"
-echo "  - Auth: http://auth.localhost"
-echo "  - Reminder: http://reminder.localhost"
-echo "  - Feedback: http://feedback.localhost"
-echo "  - Notification: http://notification.localhost"
-echo "  - Translation: http://translation.localhost"
-echo "  - Traefik Dashboard: http://localhost:8080"
+echo "  - 🌐 Feedback UI: http://ui.localhost:8001 (Main App)"
+echo "  - 🔐 Auth: http://auth.localhost:8001"
+echo "  - ⏰ Reminder: http://reminder.localhost:8001"
+echo "  - 💬 Feedback API: http://feedback.localhost:8001"
+echo "  - 📢 Notification: http://notification.localhost:8001"
+echo "  - 🌍 Translation: http://translation.localhost:8001"
+echo "  - 📊 Traefik Dashboard: http://localhost:8081"
 echo ""
 echo -e "${BLUE}🔐 Default admin credentials:${NC}"
 echo "  Email: admin@hospital.com"

@@ -29,12 +29,18 @@ class NotificationRequest(BaseModel):
 def send_notification(notification: NotificationRequest):
     if notification.type == "sms":
         try:
-            twilio_client.messages.create(
+            message = twilio_client.messages.create(
                 body=notification.message,
                 from_=TWILIO_PHONE_NUMBER,
                 to=notification.to
             )
-            return {"status": "sent"}
+            return {
+                "status": "sent",
+                "sid": message.sid,
+                "to": notification.to,
+                "from": TWILIO_PHONE_NUMBER,
+                "message_status": message.status
+            }
         except Exception as e:
             raise HTTPException(
                 status_code=500, detail=f"Twilio SMS error: {e}"

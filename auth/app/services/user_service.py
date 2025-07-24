@@ -17,6 +17,7 @@ def get_user_by_email(email: str) -> Optional[UserInDB]:
     user_data = users_collection.find_one({"email": email})
     if user_data:
         user_data["id"] = str(user_data["_id"])
+        del user_data["_id"]  # Remove the MongoDB _id field
         # Handle permissions conversion
         if "permissions" in user_data and user_data["permissions"]:
             user_data["permissions"] = [Permission(p) for p in user_data["permissions"]]
@@ -30,6 +31,7 @@ def get_user_by_id(user_id: str) -> Optional[UserInDB]:
         user_data = users_collection.find_one({"_id": ObjectId(user_id)})
         if user_data:
             user_data["id"] = str(user_data["_id"])
+            del user_data["_id"]  # Remove the MongoDB _id field
             # Handle permissions conversion
             if "permissions" in user_data and user_data["permissions"]:
                 user_data["permissions"] = [Permission(p) for p in user_data["permissions"]]
@@ -93,6 +95,7 @@ def get_all_users() -> List[User]:
     users = []
     for user_data in users_collection.find():
         user_data["id"] = str(user_data["_id"])
+        del user_data["_id"]  # Remove the MongoDB _id field
         users.append(User(**user_data))
     return users
 

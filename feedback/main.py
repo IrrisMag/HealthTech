@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from datetime import datetime
 from enum import Enum
 from typing import Optional, List, Dict, Any
@@ -14,6 +15,10 @@ from textblob import TextBlob
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Environment variables
+MONGODB_URL = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+DATABASE_NAME = os.getenv("DB_NAME", "reminderdb_feedback")
 
 
 
@@ -42,12 +47,10 @@ app.add_middleware(
 )
 
 
-# Database connection with SSL configuration
+# Database connection without SSL
 try:
     client = motor.motor_asyncio.AsyncIOMotorClient(
         MONGODB_URL,
-        tls=True,
-        tlsAllowInvalidCertificates=True,
         serverSelectionTimeoutMS=30000,
         connectTimeoutMS=30000,
         socketTimeoutMS=30000,
@@ -61,8 +64,6 @@ except Exception as e:
     # Fallback configuration
     client = motor.motor_asyncio.AsyncIOMotorClient(
         MONGODB_URL,
-        ssl=True,
-        ssl_cert_reqs=None,
         serverSelectionTimeoutMS=30000,
         connectTimeoutMS=30000,
         socketTimeoutMS=30000
@@ -138,16 +139,16 @@ class AnalyticsResponse(BaseModel):
 
 
 # Utility functions
-def convert_objectid(document):
-    """Convert ObjectId to string for JSON serialization"""
+def convert_objectid(document: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Convert ObjectId to string for JSON serialization."""
     if document:
         document["id"] = str(document["_id"])
         del document["_id"]
     return document
 
 
-async def check_db_connection():
-    """Check if database connection is available"""
+async def check_db_connection() -> bool:
+    """Check if database connection is available."""
     try:
         await asyncio.wait_for(client.admin.command('ping'), timeout=5.0)
         return True

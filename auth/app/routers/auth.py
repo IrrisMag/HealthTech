@@ -137,7 +137,6 @@ async def refresh_token(token_request: TokenRefresh, request: Request):
 @router.post("/logout")
 async def logout(
     logout_request: LogoutRequest,
-    request: Request,
     current_user: UserProfile = Depends(get_current_user)
 ):
     """Logout user and invalidate tokens"""
@@ -150,7 +149,6 @@ async def logout(
         user_id=current_user.id,
         user_email=current_user.email,
         severity=AuditSeverity.LOW,
-        request=request,
         success=True
     )
 

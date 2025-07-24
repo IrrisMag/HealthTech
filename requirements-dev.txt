@@ -1,0 +1,50 @@
+# Development dependencies for HealthTech Platform
+# Install with: pip install -r requirements-dev.txt
+
+# Code formatting and linting
+black==23.12.1
+isort==5.13.2
+flake8==7.0.0
+flake8-bugbear==23.12.2
+flake8-docstrings==1.7.0
+flake8-import-order==0.18.2
+flake8-typing-imports==1.15.0
+
+# Type checking
+mypy==1.8.0
+types-requests==2.31.0.20240125
+types-python-dateutil==2.8.19.20240106
+
+# Security analysis
+bandit==1.7.5
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.2
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+httpx==0.26.0  # For testing FastAPI apps
+
+# Pre-commit hooks
+pre-commit==3.6.0
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# Code coverage
+coverage==7.4.0
+
+# Performance profiling
+py-spy==0.3.14
+
+# Database testing
+pytest-mongodb==2.4.2
+
+# API testing
+requests==2.31.0
+
+# Development utilities
+python-dotenv==1.0.0
+rich==13.7.0  # Better terminal output
+click==8.1.7  # CLI utilities

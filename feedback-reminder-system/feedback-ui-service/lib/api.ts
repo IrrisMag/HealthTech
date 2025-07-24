@@ -6,13 +6,31 @@ const NOTIFICATION_API_URL = process.env.NEXT_PUBLIC_NOTIFICATION_API_URL;
 const TRANSLATION_API_URL = process.env.NEXT_PUBLIC_TRANSLATION_API_URL;
 
 export async function getFeedbacks(token: string) {
-  const res = await fetch(`${FEEDBACK_API_URL}/feedbacks`, {
+  const res = await fetch(`${FEEDBACK_API_URL}/feedback`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
   if (!res.ok) throw new Error('Erreur lors de la récupération des feedbacks');
+  return res.json();
+}
+
+export async function submitFeedback(feedbackData: any, token?: string) {
+  const headers: any = {
+    'Content-Type': 'application/json'
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${FEEDBACK_API_URL}/feedback`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(feedbackData)
+  });
+  if (!res.ok) throw new Error('Erreur lors de la soumission du feedback');
   return res.json();
 }
 
@@ -28,7 +46,7 @@ export async function login(email: string, password: string) {
 
 // Reminder API calls
 export async function getReminders(token: string) {
-  const res = await fetch(`${REMINDER_API_URL}/reminders`, {
+  const res = await fetch(`${REMINDER_API_URL}/reminders/`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -39,7 +57,7 @@ export async function getReminders(token: string) {
 }
 
 export async function createReminder(reminderData: any, token: string) {
-  const res = await fetch(`${REMINDER_API_URL}/reminders`, {
+  const res = await fetch(`${REMINDER_API_URL}/reminders/`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
