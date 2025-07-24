@@ -64,23 +64,30 @@ cp .env.example .env
 # Éditer .env avec vos configurations
 ```
 
-### **Configuration .env**
+### **Environment Configuration**
 ```bash
-# MongoDB
-MONGODB_CLUSTER_URI=mongodb+srv://user:pass@cluster.mongodb.net/
+# Current .env configuration (Track 1)
+# MongoDB Atlas
+MONGODB_CLUSTER_URI=mongodb+srv://irris:irris@healthtech.khb7ck1.mongodb.net/?retryWrites=true&w=majority&appName=healthtech
 MONGODB_LOCAL_URI=mongodb://mongo:27017
 MONGODB_URI=${MONGODB_CLUSTER_URI}
 
-# Twilio (Track 1)
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
+# Database Names (per service)
+DB_NAME_AUTH=healthtech_auth
+DB_NAME_FEEDBACK=healthtech_feedback
+DB_NAME_REMINDER=healthtech_reminders
+DB_NAME_NOTIFICATION=healthtech_notifications
+DB_NAME_TRANSLATION=healthtech_translations
+
+# Twilio Configuration (Track 1) - Replace with your credentials
+TWILIO_ACCOUNT_SID=your_twilio_account_sid_here
+TWILIO_AUTH_TOKEN=your_twilio_auth_token_here
 TWILIO_PHONE_NUMBER=+1234567890
 
-# OpenAI (Track 2)
-OPENAI_API_KEY=your_openai_api_key
-MODEL_NAME=gpt-3.5-turbo
+# CORS Configuration
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:19006
 
-# Sécurité
+# Security
 JWT_SECRET=your-super-secure-jwt-secret
 ```
 
