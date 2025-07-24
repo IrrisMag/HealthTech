@@ -14,19 +14,45 @@ This repository contains the full microservices-based platform for the "Co-Creat
 - Docker & Docker Compose for orchestration
 
 ## Quick Start
-1. Clone the repository and ensure Docker & Docker Compose are installed.
-2. Add the following to your `/etc/hosts`:
-   ```
-   127.0.0.1 feedback.localhost auth.localhost reminder.localhost feedback-ui.localhost reminder-ui.localhost feedback-mobile.localhost
-   ```
-3. Build and start all services:
+
+### Prerequisites
+- Docker & Docker Compose installed
+- Node.js 18+ and npm installed
+
+### Setup
+1. **Clone the repository**:
    ```bash
-   docker-compose up --build
+   git clone <repository-url>
+   cd HealthTech
    ```
-4. Access the main UIs:
-   - Feedback Web (Hospital): http://feedback-ui.localhost
-   - Reminder Web (Hospital): http://reminder-ui.localhost
-   - Feedback Mobile (Patient): http://feedback-mobile.localhost
+
+2. **Configure environment variables**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your MongoDB Atlas credentials, Twilio keys, etc.
+   ```
+
+3. **Add to your `/etc/hosts`**:
+   ```bash
+   echo "127.0.0.1 auth.localhost feedback.localhost reminder.localhost notification.localhost translation.localhost" | sudo tee -a /etc/hosts
+   ```
+
+4. **Start backend services**:
+   ```bash
+   docker-compose -f docker-compose.track1.yml up -d
+   ```
+
+5. **Start frontend application**:
+   ```bash
+   cd feedback-reminder-system/feedback-ui-service
+   npm install
+   npm run dev
+   ```
+
+6. **Access the application**:
+   - **Main Web App**: http://localhost:3000
+   - **Backend APIs**: http://*.localhost:8001
+   - **Traefik Dashboard**: http://localhost:8081
 
 ## Services Overview
 - See each subdirectory's README.md for service-specific setup, configuration, and usage instructions:

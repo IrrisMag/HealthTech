@@ -3,8 +3,12 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.env
-.env.*
+.env
+.env.local
+.env.production
+.env.development
+# Keep .env.example for setup reference
+!.env.example
 *.sqlite3
 *.db
 *.log
