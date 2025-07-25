@@ -41,7 +41,7 @@ const AnalyticsPage = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/analytics`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/feedback/analytics`);
       const data = await response.json();
       setAnalytics(data);
     } catch (error) {
@@ -51,9 +51,9 @@ const AnalyticsPage = () => {
 
   const fetchFeedbacks = async () => {
     try {
-      const url = selectedSentiment === "all" 
-        ? `${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/feedback`
-        : `${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/feedback?sentiment=${selectedSentiment}`;
+      const url = selectedSentiment === "all"
+        ? `${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/feedback/list`
+        : `${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/feedback/list?sentiment=${selectedSentiment}`;
       
       const response = await fetch(url);
       const data = await response.json();

@@ -42,7 +42,7 @@ export async function submitFeedback(feedbackData: any, token?: string) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${FEEDBACK_API_URL}/feedback`, {
+  const res = await fetch(`${FEEDBACK_API_URL}/api/feedback/submit`, {
     method: 'POST',
     headers,
     body: JSON.stringify(feedbackData)

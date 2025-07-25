@@ -28,6 +28,10 @@ const RemindersPage = (props: Props) => {
     doctor_name: "",
     department: "",
     reminder_type: "appointment",
+    medication_name: "",
+    dosage: "",
+    frequency: "",
+    duration: "",
     notes: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,14 +46,27 @@ const RemindersPage = (props: Props) => {
       // Get API configuration
       const apiConfig = getApiConfig();
 
-      // Create reminder data
+      // Create reminder data based on reminder type
       const reminderData = {
         patient_id: formData.patient_id || `PAT${Date.now()}`,
-        appointment_date: formData.appointment_date,
-        appointment_time: formData.appointment_time,
-        doctor_name: formData.doctor_name,
-        department: formData.department,
-        phone: formData.phone
+        patient_name: formData.patient_name,
+        phone: formData.phone,
+        reminder_type: formData.reminder_type,
+        notes: formData.notes,
+        // Appointment-specific fields
+        ...(formData.reminder_type === 'appointment' && {
+          appointment_date: formData.appointment_date,
+          appointment_time: formData.appointment_time,
+          doctor_name: formData.doctor_name,
+          department: formData.department
+        }),
+        // Medication-specific fields
+        ...(formData.reminder_type === 'medication' && {
+          medication_name: formData.medication_name,
+          dosage: formData.dosage,
+          frequency: formData.frequency,
+          duration: formData.duration
+        })
       };
 
       // Call the real API
@@ -67,7 +84,12 @@ const RemindersPage = (props: Props) => {
 
       const result = await response.json();
 
-      setSubmitStatus(`✅ Reminder created successfully! SMS sent to ${formData.phone} for appointment on ${formData.appointment_date} at ${formData.appointment_time}. Reminder ID: ${result.reminder_id}`);
+      // Dynamic success message based on reminder type
+      const successMessage = formData.reminder_type === 'appointment'
+        ? `✅ Appointment reminder created successfully! SMS sent to ${formData.phone} for appointment on ${formData.appointment_date} at ${formData.appointment_time}. Reminder ID: ${result.reminder_id}`
+        : `✅ Medication reminder created successfully! SMS sent to ${formData.phone} for ${formData.medication_name} (${formData.dosage}, ${formData.frequency}). Reminder ID: ${result.reminder_id}`;
+
+      setSubmitStatus(successMessage);
 
       // Reset form
       setFormData({
@@ -79,6 +101,10 @@ const RemindersPage = (props: Props) => {
         doctor_name: "",
         department: "",
         reminder_type: "appointment",
+        medication_name: "",
+        dosage: "",
+        frequency: "",
+        duration: "",
         notes: ""
       });
     } catch (error) {
@@ -97,10 +123,10 @@ const RemindersPage = (props: Props) => {
               <Calendar className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              📅 Appointment Reminder Service
+              📅 Smart Reminder Service
             </h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Schedule appointment reminders for patients. SMS notifications will be sent automatically to ensure patients don't miss their appointments.
+              Schedule appointment and medication reminders for patients. SMS notifications will be sent automatically to ensure patients don't miss their appointments or medications.
             </p>
           </div>
 
@@ -115,6 +141,48 @@ const RemindersPage = (props: Props) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Reminder Type Selector */}
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-4">
+                <Bell className="w-4 h-4" />
+                Reminder Type *
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    formData.reminder_type === 'appointment'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setFormData({...formData, reminder_type: 'appointment'})}
+                >
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-6 h-6 text-blue-600" />
+                    <div>
+                      <h3 className="font-medium text-gray-900">Appointment Reminder</h3>
+                      <p className="text-sm text-gray-600">Schedule appointment reminders</p>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    formData.reminder_type === 'medication'
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setFormData({...formData, reminder_type: 'medication'})}
+                >
+                  <div className="flex items-center gap-3">
+                    <Stethoscope className="w-6 h-6 text-green-600" />
+                    <div>
+                      <h3 className="font-medium text-gray-900">Medication Reminder</h3>
+                      <p className="text-sm text-gray-600">Schedule medication reminders</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -161,94 +229,160 @@ const RemindersPage = (props: Props) => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Appointment Date *
-                </label>
-                <Input
-                  type="date"
-                  value={formData.appointment_date}
-                  onChange={(e) => setFormData({...formData, appointment_date: e.target.value})}
-                  required
-                  className="py-4"
-                />
-              </div>
+            {/* Conditional Fields Based on Reminder Type */}
+            {formData.reminder_type === 'appointment' && (
+              <div className="bg-blue-50 p-6 rounded-lg space-y-6">
+                <h3 className="text-lg font-medium text-blue-900 flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Appointment Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Appointment Date *
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.appointment_date}
+                      onChange={(e) => setFormData({...formData, appointment_date: e.target.value})}
+                      required={formData.reminder_type === 'appointment'}
+                      className="py-4"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Appointment Time *
-                </label>
-                <Input
-                  type="time"
-                  value={formData.appointment_time}
-                  onChange={(e) => setFormData({...formData, appointment_time: e.target.value})}
-                  required
-                  className="py-4"
-                />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Appointment Time *
+                    </label>
+                    <Input
+                      type="time"
+                      value={formData.appointment_time}
+                      onChange={(e) => setFormData({...formData, appointment_time: e.target.value})}
+                      required={formData.reminder_type === 'appointment'}
+                      className="py-4"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Stethoscope className="w-4 h-4" />
-                  Doctor Name *
-                </label>
-                <Input
-                  placeholder="e.g., Dr. Mballa"
-                  value={formData.doctor_name}
-                  onChange={(e) => setFormData({...formData, doctor_name: e.target.value})}
-                  required
-                  className="py-4"
-                />
+            {formData.reminder_type === 'medication' && (
+              <div className="bg-green-50 p-6 rounded-lg space-y-6">
+                <h3 className="text-lg font-medium text-green-900 flex items-center gap-2">
+                  <Stethoscope className="w-5 h-5" />
+                  Medication Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Medication Name *
+                    </label>
+                    <Input
+                      placeholder="e.g., Paracetamol, Amoxicillin"
+                      value={formData.medication_name}
+                      onChange={(e) => setFormData({...formData, medication_name: e.target.value})}
+                      required={formData.reminder_type === 'medication'}
+                      className="py-4"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Dosage *
+                    </label>
+                    <Input
+                      placeholder="e.g., 500mg, 2 tablets"
+                      value={formData.dosage}
+                      onChange={(e) => setFormData({...formData, dosage: e.target.value})}
+                      required={formData.reminder_type === 'medication'}
+                      className="py-4"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Frequency *
+                    </label>
+                    <select
+                      value={formData.frequency}
+                      onChange={(e) => setFormData({...formData, frequency: e.target.value})}
+                      required={formData.reminder_type === 'medication'}
+                      className="w-full py-4 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select frequency</option>
+                      <option value="once_daily">Once daily</option>
+                      <option value="twice_daily">Twice daily</option>
+                      <option value="three_times_daily">Three times daily</option>
+                      <option value="four_times_daily">Four times daily</option>
+                      <option value="every_6_hours">Every 6 hours</option>
+                      <option value="every_8_hours">Every 8 hours</option>
+                      <option value="every_12_hours">Every 12 hours</option>
+                      <option value="as_needed">As needed</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Duration *
+                    </label>
+                    <Input
+                      placeholder="e.g., 7 days, 2 weeks, 1 month"
+                      value={formData.duration}
+                      onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                      required={formData.reminder_type === 'medication'}
+                      className="py-4"
+                    />
+                  </div>
+                </div>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Department *</label>
-                <Select value={formData.department} onValueChange={(value) => setFormData({...formData, department: value})}>
-                  <SelectTrigger className="w-full py-4">
-                    <SelectValue placeholder="Select Department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Hospital Departments</SelectLabel>
-                      <SelectItem value="general">🏥 General Medicine</SelectItem>
-                      <SelectItem value="emergency">🚨 Emergency</SelectItem>
-                      <SelectItem value="cardiology">❤️ Cardiology</SelectItem>
-                      <SelectItem value="surgery">🔪 Surgery</SelectItem>
-                      <SelectItem value="pediatrics">👶 Pediatrics</SelectItem>
-                      <SelectItem value="maternity">🤱 Maternity</SelectItem>
-                      <SelectItem value="radiology">📷 Radiology</SelectItem>
-                      <SelectItem value="laboratory">🧪 Laboratory</SelectItem>
-                      <SelectItem value="pharmacy">💊 Pharmacy</SelectItem>
-                      <SelectItem value="dentistry">🦷 Dentistry</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+            {/* Doctor and Department - Only for Appointments */}
+            {formData.reminder_type === 'appointment' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Stethoscope className="w-4 h-4" />
+                    Doctor Name *
+                  </label>
+                  <Input
+                    placeholder="e.g., Dr. Mballa"
+                    value={formData.doctor_name}
+                    onChange={(e) => setFormData({...formData, doctor_name: e.target.value})}
+                    required={formData.reminder_type === 'appointment'}
+                    className="py-4"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Department *</label>
+                  <Select value={formData.department} onValueChange={(value) => setFormData({...formData, department: value})}>
+                    <SelectTrigger className="w-full py-4">
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Hospital Departments</SelectLabel>
+                        <SelectItem value="general">🏥 General Medicine</SelectItem>
+                        <SelectItem value="emergency">🚨 Emergency</SelectItem>
+                        <SelectItem value="cardiology">❤️ Cardiology</SelectItem>
+                        <SelectItem value="surgery">🔪 Surgery</SelectItem>
+                        <SelectItem value="pediatrics">👶 Pediatrics</SelectItem>
+                        <SelectItem value="maternity">🤱 Maternity</SelectItem>
+                        <SelectItem value="radiology">📷 Radiology</SelectItem>
+                        <SelectItem value="laboratory">🧪 Laboratory</SelectItem>
+                        <SelectItem value="pharmacy">💊 Pharmacy</SelectItem>
+                        <SelectItem value="dentistry">🦷 Dentistry</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Reminder Type</label>
-              <Select value={formData.reminder_type} onValueChange={(value) => setFormData({...formData, reminder_type: value})}>
-                <SelectTrigger className="w-full py-4">
-                  <SelectValue placeholder="Select Reminder Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Reminder Types</SelectLabel>
-                    <SelectItem value="appointment">📅 Appointment Reminder</SelectItem>
-                    <SelectItem value="medication">💊 Medication Reminder</SelectItem>
-                    <SelectItem value="follow_up">🔄 Follow-up Reminder</SelectItem>
-                    <SelectItem value="lab_results">🧪 Lab Results Ready</SelectItem>
-                    <SelectItem value="vaccination">💉 Vaccination Due</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Additional Notes</label>
@@ -266,7 +400,9 @@ const RemindersPage = (props: Props) => {
             <div className="flex gap-3">
               <Button
                 type="submit"
-                disabled={isSubmitting || !formData.patient_name || !formData.phone || !formData.appointment_date || !formData.appointment_time || !formData.doctor_name || !formData.department}
+                disabled={isSubmitting || !formData.patient_name || !formData.phone ||
+                  (formData.reminder_type === 'appointment' && (!formData.appointment_date || !formData.appointment_time || !formData.doctor_name || !formData.department)) ||
+                  (formData.reminder_type === 'medication' && (!formData.medication_name || !formData.dosage || !formData.frequency || !formData.duration))}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 {isSubmitting ? (

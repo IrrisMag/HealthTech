@@ -358,6 +358,134 @@ docker-compose up --build -d
 # Traefik Dashboard: http://localhost:8080
 ```
 
+---
+
+## 🌐 **LOCAL DEPLOYMENT ACCESS GUIDE**
+
+### 🖥️ **Web Application Access (Local)**
+
+After deploying locally with Docker, access the platform through these URLs:
+
+| Service | Local URL | Description | Status Check |
+|---------|-----------|-------------|--------------|
+| 🏠 **Main Web App** | **[http://healthtech.localhost](http://healthtech.localhost)** | Complete healthcare platform | ✅ Primary access point |
+| 📝 **Feedback Page** | **[http://healthtech.localhost/feedback](http://healthtech.localhost/feedback)** | Submit patient feedback | ✅ AI-powered analysis |
+| 📅 **Reminders Page** | **[http://healthtech.localhost/reminders](http://healthtech.localhost/reminders)** | Schedule appointment/medication reminders | ✅ SMS integration |
+| 🤖 **AI Assistant** | **[http://healthtech.localhost/chatbot](http://healthtech.localhost/chatbot)** | Medical AI chatbot | ✅ LangChain + RAG |
+| 📊 **Analytics Dashboard** | **[http://healthtech.localhost/analytics](http://healthtech.localhost/analytics)** | Real-time healthcare analytics | ✅ Data visualization |
+
+### 📱 **Mobile Application Access (Local)**
+
+For mobile app development and testing:
+
+```bash
+# Navigate to mobile app directory
+cd feedback-reminder-system/mobile
+
+# Install dependencies
+npm install
+
+# Start Expo development server
+npx expo start
+
+# Access options:
+# 1. Scan QR code with Expo Go app (iOS/Android)
+# 2. Press 'w' to open in web browser
+# 3. Press 'a' to open Android emulator
+# 4. Press 'i' to open iOS simulator
+```
+
+**Mobile App Local URLs:**
+- **Expo Dev Server**: `http://localhost:8081`
+- **Metro Bundler**: `http://localhost:19000`
+- **Web Version**: `http://localhost:19006`
+
+### 🔧 **Backend API Access (Local)**
+
+Direct access to backend services for development:
+
+| API Service | Local URL | Documentation | Health Check |
+|-------------|-----------|---------------|--------------|
+| 🔐 **Track 1 API** | **[http://track1.localhost](http://track1.localhost)** | [/docs](http://track1.localhost/docs) | [/health](http://track1.localhost/health) |
+| 🤖 **Track 2 API** | **[http://track2.localhost](http://track2.localhost)** | [/docs](http://track2.localhost/docs) | [/health](http://track2.localhost/health) |
+| 🗄️ **MongoDB Admin** | **[http://mongo.localhost](http://mongo.localhost)** | Database management | ✅ Web interface |
+| 🌐 **Traefik Dashboard** | **[http://localhost:8080](http://localhost:8080)** | Load balancer status | ✅ Service routing |
+
+### 🛠️ **Development Environment Setup**
+
+**For Frontend Development:**
+```bash
+# Navigate to frontend
+cd feedback-reminder-system/feedback-ui-service
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Access at: http://localhost:3000
+```
+
+**For Individual Microservice Development:**
+```bash
+# Example: Feedback microservice
+cd feedback
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Start development server
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Access at: http://localhost:8000
+# API docs: http://localhost:8000/docs
+```
+
+### 📋 **Local Testing Checklist**
+
+After local deployment, verify these endpoints:
+
+- ✅ **Web App**: [http://healthtech.localhost](http://healthtech.localhost)
+- ✅ **Mobile App**: Expo QR code scan or `http://localhost:19006`
+- ✅ **API Health**: [http://track1.localhost/health](http://track1.localhost/health)
+- ✅ **Database**: [http://mongo.localhost](http://mongo.localhost)
+- ✅ **Feedback Submit**: Test form submission
+- ✅ **Reminder SMS**: Test with valid phone number
+- ✅ **AI Chatbot**: Test medical queries
+- ✅ **Analytics**: View dashboard data
+
+### 🔍 **Troubleshooting Local Access**
+
+**Common Issues:**
+
+1. **"Site can't be reached" for .localhost URLs**
+   ```bash
+   # Add to /etc/hosts (Linux/Mac) or C:\Windows\System32\drivers\etc\hosts (Windows)
+   127.0.0.1 healthtech.localhost
+   127.0.0.1 track1.localhost
+   127.0.0.1 track2.localhost
+   127.0.0.1 mongo.localhost
+   ```
+
+2. **Mobile app not connecting to local backend**
+   ```bash
+   # Update mobile app API URLs to use your local IP
+   # In mobile/.env:
+   EXPO_PUBLIC_FEEDBACK_API_URL=http://YOUR_LOCAL_IP:8000
+   ```
+
+3. **Services not starting**
+   ```bash
+   # Check Docker logs
+   docker-compose logs -f [service-name]
+
+   # Restart specific service
+   docker-compose restart [service-name]
+   ```
+
+---
+
 ### 🌐 **Complete Platform Architecture**
 
 **Development Mode (All Microservices):**
