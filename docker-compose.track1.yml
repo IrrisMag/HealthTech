@@ -17,7 +17,7 @@ services:
     build: ./auth
     environment:
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
-      - DB_NAME=${DB_NAME_AUTH:-reminderdb_auth}
+      - DB_NAME=${DB_NAME_AUTH:-healthtech_auth}
       - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
@@ -32,7 +32,7 @@ services:
     build: ./reminder
     environment:
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
-      - DB_NAME=${DB_NAME_REMINDER:-reminderdb_reminder}
+      - DB_NAME=${DB_NAME_REMINDER:-healthtech_reminders}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
       - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
@@ -53,7 +53,7 @@ services:
     build: ./feedback
     environment:
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
-      - DB_NAME=${DB_NAME_FEEDBACK:-reminderdb_feedback}
+      - DB_NAME=${DB_NAME_FEEDBACK:-healthtech_feedback}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
       - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
       - ENVIRONMENT=${ENVIRONMENT:-development}
@@ -70,7 +70,7 @@ services:
     build: ./notification
     environment:
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
-      - DB_NAME=${DB_NAME_NOTIFICATION:-reminderdb_notification}
+      - DB_NAME=${DB_NAME_NOTIFICATION:-healthtech_notifications}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
       - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
@@ -90,7 +90,7 @@ services:
     build: ./translation
     environment:
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
-      - DB_NAME=${DB_NAME_TRANSLATION:-reminderdb_translation}
+      - DB_NAME=${DB_NAME_TRANSLATION:-healthtech_translations}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
       - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
       - ENVIRONMENT=${ENVIRONMENT:-development}
