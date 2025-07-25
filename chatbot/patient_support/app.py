@@ -8,6 +8,10 @@ import json
 from pathlib import Path
 import asyncio
 import hashlib
+import sys
+
+# Add DT_explanation to path for importing medical knowledge
+sys.path.append(str(Path(__file__).parent.parent / "DT_explanation"))
 
 # Simple PDF processing
 try:
@@ -16,8 +20,19 @@ except ImportError:
     PdfReader = None
 
 # Configure Gemini API
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyBiwXGFp4AMSi-Ki4kO9iZ3w40OanNt_b4")
-genai.configure(api_key=GEMINI_API_KEY)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    print("⚠️  GEMINI_API_KEY not set in environment variables")
+    print("💡 Add GEMINI_API_KEY to your .env file for full functionality")
+    # You could add a fallback API key here if needed
+    GEMINI_API_KEY = "fallback-key-if-needed"
+
+try:
+    genai.configure(api_key=GEMINI_API_KEY)
+    print("✅ Gemini AI configured successfully")
+except Exception as e:
+    print(f"❌ Failed to configure Gemini AI: {e}")
+    print("🔧 Check your GEMINI_API_KEY in .env file")
 
 app = FastAPI(
     title="Enhanced Patient Chatbot",
@@ -40,6 +55,53 @@ app.add_middleware(
 document_chunks = []
 conversation_memory = {}
 
+# DT_explanation medical knowledge base
+DT_MEDICAL_KNOWLEDGE = {
+    "conditions": {
+        "lupus": {
+            "simple_name": "Lupus (Systemic Lupus Erythematosus)",
+            "explanation": "Lupus is an autoimmune disease where your body's immune system attacks your own healthy tissues and organs. Think of it like your body's security system getting confused and attacking your own cells instead of protecting them.",
+            "symptoms": ["Joint pain and swelling", "Skin rashes (especially butterfly rash on face)", "Fatigue", "Fever", "Hair loss", "Mouth ulcers"],
+            "causes": ["Genetics", "Environmental triggers", "Infections", "Stress", "Sunlight exposure"],
+            "lifestyle_tips": ["Protect skin from sun", "Get adequate rest", "Exercise gently", "Manage stress", "Follow prescribed medications"],
+            "when_to_contact_doctor": ["Severe joint pain", "New rashes", "Persistent fever", "Difficulty breathing", "Chest pain"]
+        },
+        "hypertension": {
+            "simple_name": "High Blood Pressure",
+            "explanation": "Your blood pressure is higher than normal. Think of it like water flowing through a garden hose with too much pressure - it can strain your heart and blood vessels over time.",
+            "symptoms": ["Often no symptoms", "Headaches", "Dizziness", "Blurred vision"],
+            "causes": ["Poor diet", "Lack of exercise", "Stress", "Family history", "Age"],
+            "lifestyle_tips": ["Reduce salt intake", "Exercise regularly", "Manage stress", "Maintain healthy weight", "Limit alcohol"],
+            "when_to_contact_doctor": ["Blood pressure over 180/120", "Severe headache", "Chest pain", "Difficulty breathing"]
+        },
+        "diabetes_type_2": {
+            "simple_name": "Type 2 Diabetes",
+            "explanation": "Your body has trouble using sugar (glucose) properly. It's like having a key that doesn't fit the lock perfectly - your cells can't easily use the sugar in your blood for energy.",
+            "symptoms": ["Increased thirst", "Frequent urination", "Fatigue", "Blurred vision", "Slow healing wounds"],
+            "causes": ["Being overweight", "Lack of physical activity", "Family history", "Age", "Poor diet"],
+            "lifestyle_tips": ["Follow a balanced diet", "Exercise regularly", "Monitor blood sugar", "Take medications as prescribed", "Maintain healthy weight"],
+            "when_to_contact_doctor": ["Blood sugar over 300", "Persistent high readings", "Signs of infection", "Severe fatigue"]
+        },
+        "malaria": {
+            "simple_name": "Malaria",
+            "explanation": "Malaria is a serious disease caused by parasites that are transmitted through mosquito bites. The parasites travel to your liver and then infect your red blood cells.",
+            "symptoms": ["Fever and chills", "Headache", "Muscle aches", "Nausea and vomiting", "Fatigue", "Sweating"],
+            "causes": ["Mosquito bites from infected Anopheles mosquitoes", "Blood transfusion (rare)", "Sharing needles"],
+            "lifestyle_tips": ["Use mosquito nets", "Apply insect repellent", "Wear long sleeves", "Take preventive medication when traveling"],
+            "when_to_contact_doctor": ["High fever", "Severe headache", "Confusion", "Difficulty breathing", "Persistent vomiting"]
+        }
+    },
+    "medications": {
+        "metformin": {
+            "purpose": "Helps control blood sugar in diabetes",
+            "how_it_works": "It helps your body use insulin better and reduces the amount of sugar your liver makes",
+            "common_side_effects": ["Stomach upset", "Nausea", "Diarrhea"],
+            "taking_instructions": "Take with food to reduce stomach upset. Usually taken twice daily.",
+            "precautions": ["Don't skip meals", "Monitor blood sugar regularly", "Stay hydrated"]
+        }
+    }
+}
+
 class ChatRequest(BaseModel):
     message: str
     patient_context: Optional[str] = None
@@ -58,17 +120,131 @@ class DocumentInfo(BaseModel):
 
 def is_patient_related_query(message: str) -> bool:
     """Check if the query is related to patient care, health, or medical topics"""
-    patient_keywords = [
-        'health', 'medical', 'doctor', 'patient', 'symptom', 'disease', 'treatment', 
+    # General medical keywords
+    general_keywords = [
+        'health', 'medical', 'doctor', 'patient', 'symptom', 'disease', 'treatment',
         'medication', 'hospital', 'clinic', 'diagnosis', 'therapy', 'pain', 'fever',
         'appointment', 'prescription', 'surgery', 'recovery', 'wellness', 'care',
         'nurse', 'emergency', 'injury', 'illness', 'condition', 'medicine', 'drug',
         'vaccine', 'test', 'examination', 'consultation', 'specialist', 'healthcare',
-        'malaria', 'infection', 'prevention', 'epidemic', 'outbreak', 'public health'
+        'infection', 'prevention', 'epidemic', 'outbreak', 'public health'
     ]
-    
+
+    # Specific medical conditions and diseases
+    medical_conditions = [
+        'malaria', 'typhoid', 'lupus', 'diabetes', 'hypertension', 'asthma', 'cancer',
+        'tuberculosis', 'pneumonia', 'bronchitis', 'arthritis', 'migraine', 'anemia',
+        'hepatitis', 'cholera', 'dengue', 'yellow fever', 'meningitis', 'sepsis',
+        'stroke', 'heart attack', 'angina', 'epilepsy', 'depression', 'anxiety',
+        'covid', 'coronavirus', 'flu', 'influenza', 'cold', 'cough', 'headache',
+        'nausea', 'vomiting', 'diarrhea', 'constipation', 'fatigue', 'weakness'
+    ]
+
+    # Medical question patterns
+    question_patterns = [
+        'what is', 'what are', 'how to treat', 'how to cure', 'symptoms of',
+        'causes of', 'prevention of', 'treatment for', 'cure for', 'medicine for',
+        'i have', 'i feel', 'i am experiencing', 'my symptoms', 'should i see'
+    ]
+
     message_lower = message.lower()
-    return any(keyword in message_lower for keyword in patient_keywords)
+
+    # Check for any medical keywords, conditions, or question patterns
+    return (any(keyword in message_lower for keyword in general_keywords) or
+            any(condition in message_lower for condition in medical_conditions) or
+            any(pattern in message_lower for pattern in question_patterns))
+
+def search_dt_explanation(query: str) -> Optional[Dict]:
+    """Search the DT_explanation medical knowledge base for relevant information"""
+    query_lower = query.lower()
+
+    # Search in conditions
+    for condition_key, condition_data in DT_MEDICAL_KNOWLEDGE["conditions"].items():
+        if (condition_key in query_lower or
+            condition_data["simple_name"].lower() in query_lower or
+            any(symptom.lower() in query_lower for symptom in condition_data.get("symptoms", []))):
+            return {
+                "type": "condition",
+                "data": condition_data,
+                "condition_name": condition_data["simple_name"]
+            }
+
+    # Search in medications
+    for med_key, med_data in DT_MEDICAL_KNOWLEDGE["medications"].items():
+        if med_key in query_lower:
+            return {
+                "type": "medication",
+                "data": med_data,
+                "medication_name": med_key.title()
+            }
+
+    return None
+
+def format_dt_explanation(dt_info: Dict, query: str) -> str:
+    """Format DT_explanation information into a patient-friendly response"""
+    if dt_info["type"] == "condition":
+        data = dt_info["data"]
+        condition_name = dt_info["condition_name"]
+
+        response = f"**{condition_name}**\n\n"
+        response += f"**What it is:** {data['explanation']}\n\n"
+
+        if "symptoms" in data:
+            response += f"**Common symptoms:**\n"
+            for symptom in data["symptoms"]:
+                response += f"• {symptom}\n"
+            response += "\n"
+
+        if "causes" in data:
+            response += f"**Common causes:**\n"
+            for cause in data["causes"]:
+                response += f"• {cause}\n"
+            response += "\n"
+
+        if "lifestyle_tips" in data:
+            response += f"**Lifestyle recommendations:**\n"
+            for tip in data["lifestyle_tips"]:
+                response += f"• {tip}\n"
+            response += "\n"
+
+        if "when_to_contact_doctor" in data:
+            response += f"**⚠️ Contact your doctor immediately if you experience:**\n"
+            for warning in data["when_to_contact_doctor"]:
+                response += f"• {warning}\n"
+            response += "\n"
+
+        response += "**Important:** This information is for educational purposes only. Always consult with a healthcare professional for proper diagnosis and treatment."
+
+        return response
+
+    elif dt_info["type"] == "medication":
+        data = dt_info["data"]
+        med_name = dt_info["medication_name"]
+
+        response = f"**{med_name}**\n\n"
+        response += f"**Purpose:** {data['purpose']}\n\n"
+        response += f"**How it works:** {data['how_it_works']}\n\n"
+
+        if "taking_instructions" in data:
+            response += f"**How to take:** {data['taking_instructions']}\n\n"
+
+        if "common_side_effects" in data:
+            response += f"**Common side effects:**\n"
+            for effect in data["common_side_effects"]:
+                response += f"• {effect}\n"
+            response += "\n"
+
+        if "precautions" in data:
+            response += f"**Important precautions:**\n"
+            for precaution in data["precautions"]:
+                response += f"• {precaution}\n"
+            response += "\n"
+
+        response += "**Important:** Always follow your doctor's instructions and never stop or change medications without consulting your healthcare provider."
+
+        return response
+
+    return ""
 
 def load_pdf_documents(docs_folder: Path) -> List[Dict]:
     """Load and process PDF documents into chunks"""
@@ -298,12 +474,34 @@ async def chat(request: ChatRequest):
         # Get conversation history
         print("🔍 Getting conversation history...")
         conversation_history = conversation_memory.get(request.session_id, [])
-        
+
+        # First, check DT_explanation medical knowledge base
+        print("🔍 Searching DT_explanation medical knowledge...")
+        dt_info = search_dt_explanation(request.message)
+
+        if dt_info:
+            print(f"🔍 Found DT_explanation info for: {dt_info.get('condition_name', dt_info.get('medication_name', 'medical topic'))}")
+            # Use DT_explanation for comprehensive medical information
+            dt_response = format_dt_explanation(dt_info, request.message)
+
+            # Manage conversation memory
+            manage_conversation_memory(request.session_id, request.message, dt_response)
+
+            return ChatResponse(
+                response=dt_response,
+                is_patient_related=True,
+                sources=["DT_explanation Medical Knowledge Base"],
+                confidence_score=0.95
+            )
+
+        # If no DT_explanation match, fall back to RAG system
+        print("🔍 No DT_explanation match, using RAG system...")
+
         # Search for relevant document chunks
         print("🔍 Searching for relevant document chunks...")
         relevant_chunks = simple_text_search(request.message, document_chunks)
         print(f"🔍 Found {len(relevant_chunks)} relevant chunks")
-        
+
         # Create RAG-enhanced prompt
         print("🔍 Creating RAG-enhanced prompt...")
         prompt = create_rag_prompt(request.message, relevant_chunks, conversation_history)

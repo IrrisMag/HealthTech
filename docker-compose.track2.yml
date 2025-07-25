@@ -1,91 +1,62 @@
 version: '3.8'
 
-# Track 2: AI-Powered Patient Support - Docker Compose Configuration
-# Challenge: Conversational AI system powered by LLMs for virtual patient assistance
-# Features: Patient support chatbot + Diagnostic/therapeutic explanations + Clinical review
+# Track 2: AI-Powered Patient Support - Traefik + Docker Architecture
+# Uses global .env file for configuration (consistent with Track 1)
 
 services:
   # Track 2 Core Service: AI-Powered Patient Support Chatbot
-  # Implements: LLM-powered conversational AI with RAG capabilities
-  # Technologies: Google Gemini, LangChain, RAG, Multilingual support
-
   chatbot:
     build: ./chatbot
-    container_name: healthtech-chatbot-track2
     environment:
-      # CORS configuration for frontend integration
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:19006}
+      # Use global .env configuration
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      # Google Gemini API configuration (primary AI service)
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-your-gemini-api-key-here}
+      # Google Gemini API configuration
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       # RAG and document processing settings
       - MAX_TOKENS=${MAX_TOKENS:-1000}
       - TEMPERATURE=${TEMPERATURE:-0.7}
       - CHUNK_SIZE=${CHUNK_SIZE:-200}
       - CHUNK_OVERLAP=${CHUNK_OVERLAP:-50}
-      # Health check and monitoring
-      - HEALTH_CHECK_ENABLED=${HEALTH_CHECK_ENABLED:-true}
+    ports:
+      # Expose chatbot directly for mobile app access
+      - "8003:8000"
     labels:
       - "traefik.enable=true"
+      # Allow access via localhost for web browsers
       - "traefik.http.routers.chatbot.rule=Host(`chatbot.localhost`)"
+      # Allow access via IP address for mobile devices
+      - "traefik.http.routers.chatbot-mobile.rule=Host(`192.168.100.194`) && PathPrefix(`/`)"
       - "traefik.http.services.chatbot.loadbalancer.server.port=8000"
-      - "traefik.http.routers.chatbot.middlewares=chatbot-cors"
-      - "traefik.http.middlewares.chatbot-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,DELETE"
+      # Enable CORS for mobile app access
+      - "traefik.http.middlewares.chatbot-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,DELETE,PATCH"
       - "traefik.http.middlewares.chatbot-cors.headers.accesscontrolallowheaders=*"
-      - "traefik.http.middlewares.chatbot-cors.headers.accesscontrolalloworiginlist=http://localhost:3000,http://localhost:3001"
+      - "traefik.http.middlewares.chatbot-cors.headers.accesscontrolalloworiginlist=*"
       - "traefik.http.middlewares.chatbot-cors.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.chatbot-cors.headers.addvaryheader=true"
+      - "traefik.http.routers.chatbot.middlewares=chatbot-cors"
+      - "traefik.http.routers.chatbot-mobile.middlewares=chatbot-cors"
     volumes:
       # Mount docs directory for PDF documents (RAG functionality)
       - ./chatbot/patient_support/docs:/app/patient_support/docs:ro
       # Mount DT_explanation data for medical knowledge base
       - ./chatbot/DT_explanation/data:/app/DT_explanation/data:ro
-      # Create volume for conversation memory persistence (optional)
-      - chatbot_memory:/app/memory
-    networks:
-      - healthtech_track2
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    depends_on:
-      - traefik
 
   traefik:
     image: traefik:v2.10
-    container_name: healthtech-traefik-track2
     command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=healthtech_track2"
-      - "--entrypoints.web.address=:80"
-      - "--log.level=INFO"
-      - "--accesslog=true"
-      - "--metrics.prometheus=true"
+      - --api.insecure=true
+      - --providers.docker=true
+      - --entrypoints.web.address=:80
+      - --accesslog=true
+      - --log.level=INFO
     ports:
       - "8002:80"    # Track 2 uses port 8002 (different from Track 1's 8001)
       - "8082:8080"  # Track 2 dashboard on 8082
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - healthtech_track2
-    restart: unless-stopped
 
-
-
-networks:
-  healthtech_track2:
-    driver: bridge
-    name: healthtech_track2
-
-volumes:
-  chatbot_memory:
-    driver: local
+# No volumes needed - Track 2 uses session-based memory
 
 # ========================================================================
 # TRACK 2: AI-POWERED PATIENT SUPPORT - DEPLOYMENT CONFIGURATION

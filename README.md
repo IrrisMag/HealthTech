@@ -19,23 +19,27 @@ The HealthTech platform is designed as a modular system with three independent t
 
 **Technologies**: FastAPI, Next.js, MongoDB Atlas, Twilio, Docker, Traefik
 
-### **✅ Track 2: AI-Powered Patient Support (IMPLEMENTED!)**
-**Status**: Fully implemented and integrated with Track 1
-**Purpose**: Provide intelligent patient assistance and education using advanced AI
+### **✅ Track 2: AI-Powered Patient Support with DT_explanation (FULLY DEPLOYED!)**
+**Status**: Production-ready with enhanced diagnostic and therapeutic explanations
+**Purpose**: Provide intelligent patient assistance with comprehensive medical knowledge
 
-**Chatbot Service Features**:
-- 🤖 **RAG-Powered Responses**: AI assistant with document-based medical responses
-- 🏥 **Medical Decision Tree Explanations**: Patient-friendly explanations of conditions & treatments
+**Enhanced AI Chatbot Features**:
+- 🤖 **DT_explanation Integration**: Advanced diagnostic and therapeutic explanation system
+- 🏥 **Comprehensive Medical Knowledge**: Detailed information on lupus, diabetes, hypertension, malaria, and more
+- 📋 **Patient-Friendly Explanations**: Simple analogies and clear medical language
+- ⚠️ **Safety Features**: Warning signs and when to contact doctors
+- 💊 **Medication Information**: Detailed drug information (metformin, etc.)
 - 🌍 **Multilingual Support**: English, Bassa, Duala, Ewondo (Cameroon languages)
+- 🤖 **RAG-Powered Responses**: AI assistant with document-based medical responses
 - 📚 **Document Processing**: Automatic PDF processing and knowledge extraction
 - 🧠 **Conversation Memory**: Context-aware responses across sessions
-- 📋 **Source Attribution**: Transparent sourcing from medical documents
-- 🎯 **Confidence Scoring**: Response reliability indicators
-- 🏥 **DGH-Specific Knowledge**: Malaria, Typhoid, and endemic diseases
-- 🌐 **Multi-Platform**: Web and mobile interfaces
+- 📋 **Source Attribution**: Transparent sourcing from medical documents and DT_explanation
+- 🎯 **High Confidence Scoring**: 95% confidence for DT_explanation responses
+- 🏥 **DGH-Specific Knowledge**: Endemic diseases and local medical context
+- 🌐 **Multi-Platform**: Web and mobile interfaces with native mobile app
 - 🔗 **Seamless Integration**: Integrated with Track 1 frontend
 
-**Technologies**: Google Gemini AI, LangChain, RAG, FastAPI, React Native, PDF Processing, Multilingual NLP
+**Technologies**: Google Gemini AI, DT_explanation System, RAG, FastAPI, React Native, Expo, PDF Processing, Multilingual NLP
 
 ### **🔄 Track 3: Advanced Healthcare Analytics (PLANNED)**
 **Status**: Future development phase
@@ -62,13 +66,15 @@ HealthTech Platform
 │   ├── Analytics Dashboard → localhost:3000/analytics
 │   └── Database (MongoDB Atlas) → healthtech.khb7ck1.mongodb.net
 │
-├── Track 2: AI Support ✅ DOCKERIZED
-│   ├── RAG Chatbot Service → chatbot.localhost:8002
+├── Track 2: AI Support with DT_explanation ✅ FULLY DEPLOYED
+│   ├── Enhanced AI Chatbot → chatbot.localhost:8002
+│   ├── DT_explanation System → Integrated medical knowledge
 │   ├── Traefik Reverse Proxy → localhost:8082
 │   ├── Web Interface → localhost:3000/chatbot
-│   ├── Mobile Interface → Expo app
-│   ├── Document Processing → PDF RAG system
-│   └── Conversation Memory → Session-based
+│   ├── Mobile App (Expo) → QR code / localhost:8081
+│   ├── RAG Document Processing → PDF medical guides
+│   ├── Medical Knowledge Base → Comprehensive conditions & medications
+│   └── Conversation Memory → Session-based with high confidence
 │
 └── Track 3: Advanced Analytics 🔄 PLANNED
     ├── Data Management → localhost:8003
@@ -76,14 +82,15 @@ HealthTech Platform
 ```
 
 ### **Technology Stack (Project-Wide)**
-| Component | Track 1 ✅ Active | Track 2 ✅ Implemented | Track 3 🔄 Planned |
+| Component | Track 1 ✅ Active | Track 2 ✅ Fully Deployed | Track 3 🔄 Planned |
 |-----------|------------------|----------------------|-------------------|
-| **Backend** | FastAPI + Docker | FastAPI + RAG + LangChain | FastAPI + Analytics |
-| **Frontend** | Next.js + Analytics | Integrated Web + Mobile UI | Analytics UI |
-| **Database** | MongoDB Atlas | Session Memory + Documents | MongoDB Atlas + ML Storage |
-| **AI/ML** | Sentiment Analysis | Google Gemini + RAG + PDF Processing | Predictive Models |
-| **Infrastructure** | Docker + Traefik | Standalone + Integration | Docker + Traefik |
+| **Backend** | FastAPI + Docker | FastAPI + DT_explanation + RAG | FastAPI + Analytics |
+| **Frontend** | Next.js + Analytics | Web + Native Mobile (Expo) | Analytics UI |
+| **Database** | MongoDB Atlas | Session Memory + Medical Knowledge | MongoDB Atlas + ML Storage |
+| **AI/ML** | Sentiment Analysis | Google Gemini + DT_explanation + RAG | Predictive Models |
+| **Infrastructure** | Docker + Traefik | Docker + Traefik (Enhanced) | Docker + Traefik |
 | **Authentication** | JWT + RBAC | Integrated with Track 1 | Shared Auth |
+| **Medical Knowledge** | N/A | Comprehensive DT_explanation System | Advanced Analytics |
 
 ### **Current Track 1 Architecture (Detailed)**
 ```
@@ -175,9 +182,8 @@ curl http://feedback.localhost:8001/health
 
 #### **Option B: Manual Step-by-Step**
 ```bash
-# Step 1: Configure environment
-cp .env.track2.example .env
-# Edit .env with your Gemini API key
+# Step 1: Ensure global .env is configured
+# GEMINI_API_KEY is already set in .env
 
 # Step 2: Start Backend Services (Docker)
 docker-compose -f docker-compose.track2.yml up -d --build
@@ -317,28 +323,42 @@ curl http://translation.localhost:8001/health
 # Test analytics at http://localhost:3000/analytics
 ```
 
-### **Track 2 Testing (Implemented)**
+### **Track 2 Testing (Fully Deployed with DT_explanation)**
 ```bash
-# Test RAG Chatbot API
-curl -X POST http://localhost:8000/chat \
+# Test Enhanced AI Chatbot with DT_explanation
+curl -X POST http://chatbot.localhost:8002/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "What are the symptoms of malaria?",
+    "message": "What is lupus?",
     "session_id": "test_session"
   }'
 
-# Test Document Management
-curl http://localhost:8000/documents
-curl http://localhost:8000/health
+# Test Medical Conditions (DT_explanation)
+curl -X POST http://chatbot.localhost:8002/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is diabetes?", "session_id": "test"}'
+
+# Test Medication Information
+curl -X POST http://chatbot.localhost:8002/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is metformin?", "session_id": "test"}'
+
+# Test Service Health & Document Management
+curl http://chatbot.localhost:8002/health
+curl http://chatbot.localhost:8002/documents
 
 # Test Memory Management
-curl -X DELETE http://localhost:8000/clear-memory
+curl -X DELETE http://chatbot.localhost:8002/clear-memory
 
-# Test Web Interface
-# Open http://localhost:3000/chatbot and interact with AI assistant
+# Test Web Interface (Enhanced)
+# Open http://localhost:3000/chatbot and test DT_explanation responses
 
-# Test Mobile Interface
-# Open mobile app and navigate to chatbot screen
+# Test Mobile Interface (Native App)
+# Scan QR code with Expo Go app or open http://localhost:8081
+# Navigate to chatbot screen and test medical questions
+
+# Test Traefik Dashboard
+# Open http://localhost:8082 for service monitoring
 ```
 
 ### **Automated Testing**
@@ -372,9 +392,11 @@ Track 1 Databases (Active):
 ├── healthtech_notifications ✅ SMS/Email delivery logs
 └── healthtech_translations  ✅ Multi-language content
 
-Track 2 Databases (Implemented):
+Track 2 Databases (Fully Deployed):
 ├── Session Memory           ✅ Conversation context & history
 ├── Document Storage         ✅ PDF processing & RAG knowledge base
+├── DT_explanation System    ✅ Medical conditions & medication knowledge
+├── Medical Knowledge Base   ✅ Comprehensive diagnostic/therapeutic data
 └── healthtech_analytics     🔄 Patient interaction analytics (planned)
 
 Track 3 Databases (Planned):

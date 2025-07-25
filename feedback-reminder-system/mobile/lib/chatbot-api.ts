@@ -1,4 +1,4 @@
-const CHATBOT_API_URL = process.env.EXPO_PUBLIC_CHATBOT_API_URL || 'http://localhost:8000';
+const CHATBOT_API_URL = process.env.EXPO_PUBLIC_CHATBOT_API_URL || 'http://chatbot.localhost:8002';
 
 export interface ChatMessage {
   message: string;

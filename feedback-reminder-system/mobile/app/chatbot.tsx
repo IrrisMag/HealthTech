@@ -11,6 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Wave from '../components/wave';
+import { getChatbotAPIURL } from '../utils/config';
 
 interface Message {
   id: string;
@@ -61,8 +62,9 @@ const ChatbotScreen = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call to your chatbot service
-      const response = await fetch('http://localhost:8000/chat', {
+      // Use automatic IP detection for chatbot API URL
+      const apiUrl = getChatbotAPIURL();
+      const response = await fetch(`${apiUrl}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

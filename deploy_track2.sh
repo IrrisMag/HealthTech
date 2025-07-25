@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # HealthTech Platform - Track 2 Deployment
-# Services: Auth, Chatbot
+# Services: MongoDB, Auth, Chatbot (AI/ML)
+# Architecture: Consistent with Track 1 (MongoDB + Traefik + Auth)
 
 set -e  # Exit on any error
 
@@ -9,10 +10,12 @@ set -e  # Exit on any error
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}🚀 Deploying HealthTech Track 2...${NC}"
-echo -e "${BLUE}Services: Auth, Chatbot (AI/ML)${NC}"
+echo -e "${BLUE}Services: Chatbot (AI/ML), Traefik${NC}"
+echo -e "${BLUE}Architecture: Traefik + Docker (uses global .env)${NC}"
 
 # Load environment variables if .env exists
 if [[ -f ".env" ]]; then
@@ -24,12 +27,12 @@ fi
 
 # Check for AI/ML specific environment variables
 if [[ -z "$GEMINI_API_KEY" ]]; then
-    echo -e "${YELLOW}⚠️  GEMINI_API_KEY not set, using default (may have rate limits)${NC}"
-    echo -e "${BLUE}💡 Set GEMINI_API_KEY in .env for production use${NC}"
+    echo -e "${YELLOW}⚠️  GEMINI_API_KEY not set, using fallback${NC}"
+    echo -e "${BLUE}💡 Add GEMINI_API_KEY to .env for production use${NC}"
 fi
 
-# Track 2 uses session-based memory, no MongoDB setup needed
-echo -e "${BLUE}🧠 Track 2 uses session-based conversation memory (no database required)${NC}"
+# Track 2 uses session-based memory, no database setup needed
+echo -e "${BLUE}🧠 Track 2 uses session-based conversation memory${NC}"
 
 # Deploy services
 echo -e "${BLUE}🔨 Building and starting services...${NC}"
@@ -49,6 +52,8 @@ if curl -f -s http://localhost:8082/api/rawdata > /dev/null 2>&1; then
 else
     echo -e "${YELLOW}⚠️  Traefik dashboard not accessible${NC}"
 fi
+
+
 
 # Check chatbot service (main Track 2 service)
 echo -e "${BLUE}🤖 Checking chatbot service...${NC}"
