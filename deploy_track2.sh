@@ -23,15 +23,13 @@ else
 fi
 
 # Check for AI/ML specific environment variables
-if [[ -z "$OPENAI_API_KEY" ]]; then
-    echo -e "${YELLOW}⚠️  OPENAI_API_KEY not set, chatbot may have limited functionality${NC}"
+if [[ -z "$GEMINI_API_KEY" ]]; then
+    echo -e "${YELLOW}⚠️  GEMINI_API_KEY not set, using default (may have rate limits)${NC}"
+    echo -e "${BLUE}💡 Set GEMINI_API_KEY in .env for production use${NC}"
 fi
 
-# Setup MongoDB if needed
-if command -v python3 &> /dev/null && [[ -f "scripts/mongodb_manager.py" ]]; then
-    echo -e "${BLUE}🗄️  Setting up MongoDB databases...${NC}"
-    python3 scripts/mongodb_manager.py --action setup --uri "${MONGODB_URI:-mongodb://localhost:27018}"
-fi
+# Track 2 uses session-based memory, no MongoDB setup needed
+echo -e "${BLUE}🧠 Track 2 uses session-based conversation memory (no database required)${NC}"
 
 # Deploy services
 echo -e "${BLUE}🔨 Building and starting services...${NC}"
@@ -39,23 +37,36 @@ docker-compose -f docker-compose.track2.yml up --build -d
 
 # Wait for services to be ready
 echo -e "${BLUE}⏳ Waiting for services to be ready...${NC}"
-sleep 15
+sleep 20
 
 # Health checks
 echo -e "${BLUE}🏥 Performing health checks...${NC}"
 
-# Check auth service
-if curl -f -s http://auth-track2.localhost/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Auth service is healthy${NC}"
+# Check Traefik first
+echo -e "${BLUE}🔍 Checking Traefik dashboard...${NC}"
+if curl -f -s http://localhost:8082/api/rawdata > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Traefik is running${NC}"
 else
-    echo -e "${YELLOW}⚠️  Auth service health check failed${NC}"
+    echo -e "${YELLOW}⚠️  Traefik dashboard not accessible${NC}"
 fi
 
-# Check chatbot service
-if curl -f -s http://chatbot.localhost/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Chatbot service is healthy${NC}"
-else
-    echo -e "${YELLOW}⚠️  Chatbot service health check failed${NC}"
+# Check chatbot service (main Track 2 service)
+echo -e "${BLUE}🤖 Checking chatbot service...${NC}"
+for i in {1..5}; do
+    if curl -f -s http://chatbot.localhost:8002/health > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Chatbot service is healthy${NC}"
+        break
+    else
+        echo -e "${YELLOW}⏳ Attempt $i/5: Waiting for chatbot service...${NC}"
+        sleep 5
+    fi
+done
+
+# Final health check
+if ! curl -f -s http://chatbot.localhost:8002/health > /dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Chatbot service health check failed after 5 attempts${NC}"
+    echo -e "${BLUE}📋 Checking chatbot logs...${NC}"
+    docker-compose -f docker-compose.track2.yml logs --tail=20 chatbot
 fi
 
 # Show running services
@@ -65,16 +76,23 @@ docker-compose -f docker-compose.track2.yml ps
 echo -e "${GREEN}🎉 Track 2 deployment completed!${NC}"
 echo ""
 echo -e "${BLUE}📍 Available endpoints:${NC}"
-echo "  - Auth: http://auth-track2.localhost"
-echo "  - Chatbot: http://chatbot.localhost"
-echo "  - Traefik Dashboard: http://localhost:8081"
+echo "  - Chatbot API: http://chatbot.localhost:8002"
+echo "  - API Documentation: http://chatbot.localhost:8002/docs"
+echo "  - Health Check: http://chatbot.localhost:8002/health"
+echo "  - Traefik Dashboard: http://localhost:8082"
 echo ""
-echo -e "${BLUE}🔐 Default admin credentials:${NC}"
-echo "  Email: admin@hospital.com"
-echo "  Password: admin123"
-echo -e "${YELLOW}  ⚠️  CHANGE THIS PASSWORD IMMEDIATELY!${NC}"
+echo -e "${BLUE}🌐 Frontend Integration:${NC}"
+echo "  - Web: http://localhost:3000/chatbot (requires frontend running)"
+echo "  - Mobile: Expo app /chatbot screen"
 echo ""
 echo -e "${BLUE}🤖 Chatbot Features:${NC}"
-echo "  - Natural language processing"
-echo "  - Medical query assistance"
-echo "  - Multi-language support"
+echo "  - RAG-powered responses with PDF document processing"
+echo "  - Medical Decision Tree explanations"
+echo "  - Multilingual support (English, Bassa, Duala, Ewondo)"
+echo "  - DGH-specific medical knowledge (Malaria, Typhoid, etc.)"
+echo "  - Conversation memory and context awareness"
+echo ""
+echo -e "${BLUE}🧪 Test the chatbot:${NC}"
+echo "  curl -X POST http://chatbot.localhost:8002/chat \\"
+echo "    -H \"Content-Type: application/json\" \\"
+echo "    -d '{\"message\": \"What are the symptoms of malaria?\", \"session_id\": \"test\"}'"

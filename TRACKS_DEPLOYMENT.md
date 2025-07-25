@@ -2,36 +2,63 @@
 
 ## 📋 **OVERVIEW**
 
-La plateforme HealthTech est organisée en **3 tracks** indépendants, chacun avec ses propres services et bases de données MongoDB. Cette architecture permet un développement et déploiement modulaire.
+The HealthTech platform is organized into **3 independent tracks**, each with its own services and MongoDB Atlas databases. This modular architecture enables independent development and deployment.
+
+**Current Status**: Track 1 is fully deployed and operational. **Track 2 is implemented and integrated**. Track 3 is planned for future development.
 
 ---
 
-## 🏗️ **ARCHITECTURE DES TRACKS**
+## 🏗️ **TRACKS ARCHITECTURE**
 
-### **🔄 Track 1 : Communication & Notifications**
+### **✅ Track 1: Patient Communication & Feedback (DEPLOYED)**
 ```
-Services: Auth + Reminder + Feedback + Notification + Translation
-Port MongoDB: 27017
-Traefik: localhost:80 (Dashboard: 8080)
-```
-
-**Fonctionnalités :**
-- **Auth** : Authentification et autorisation
-- **Reminder** : Rappels de rendez-vous
-- **Feedback** : Retours et évaluations patients
-- **Notification** : Envoi SMS/Email via Twilio
-- **Translation** : Support multi-langues
-
-### **🤖 Track 2 : Intelligence Artificielle**
-```
-Services: Auth + Chatbot
-Port MongoDB: 27018
-Traefik: localhost:81 (Dashboard: 8081)
+Architecture: Frontend (Local) + Backend (Docker) + MongoDB Atlas
+Services: Auth + Feedback + Reminder + Notification + Translation + Frontend
+Database: MongoDB Atlas (healthtech.khb7ck1.mongodb.net)
+Traefik: localhost:8001 (Dashboard: localhost:8081)
+Frontend: localhost:3000
 ```
 
-**Fonctionnalités :**
-- **Auth** : Authentification partagée
-- **Chatbot** : Assistant IA médical avec OpenAI
+**Features:**
+- **🔐 Auth Service**: JWT authentication & role-based authorization
+- **💬 Feedback Service**: Patient feedback collection with sentiment analysis
+- **⏰ Reminder Service**: Appointment reminders & scheduling
+- **📢 Notification Service**: SMS/Email delivery via Twilio
+- **🌍 Translation Service**: Multi-language content support
+- **🌐 Frontend UI**: Next.js web application for patient interaction
+- **📊 Analytics**: Real-time feedback analytics dashboard
+
+**Databases:**
+- `healthtech_auth` - User authentication & authorization
+- `healthtech_feedback` - Patient feedback & sentiment analysis
+- `healthtech_reminders` - Appointment reminders & scheduling
+- `healthtech_notifications` - Notification delivery logs
+- `healthtech_translations` - Multi-language content
+
+### **✅ Track 2: AI-Powered Patient Support (IMPLEMENTED!)**
+```
+Architecture: RAG Chatbot + Frontend Integration + Document Processing
+Services: RAG Chatbot + Web Interface + Mobile Interface + Document Processing
+Database: Session Memory + PDF Documents
+API: localhost:8000
+Frontend Integration: localhost:3000/chatbot
+Mobile Integration: Expo app /chatbot
+```
+
+**Implemented Features:**
+- **🤖 RAG Chatbot Service**: AI medical assistant with document-based responses
+- **📚 Document Processing**: Automatic PDF processing and knowledge extraction
+- **🧠 Conversation Memory**: Context-aware responses across sessions
+- **📋 Source Attribution**: Transparent sourcing from medical documents
+- **🎯 Confidence Scoring**: Response reliability indicators
+- **🌐 Web Interface**: Integrated chatbot UI in main application
+- **📱 Mobile Interface**: Native mobile chatbot interface
+- **🔗 Seamless Integration**: Connected with Track 1 services
+
+**Data Storage:**
+- Session-based conversation memory
+- PDF document processing and storage
+- Medical knowledge extraction and indexing
 
 ### **📊 Track 3 : Analytics & Data**
 ```

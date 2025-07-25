@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import google.generativeai as genai
 import os
@@ -15,10 +16,25 @@ except ImportError:
     PdfReader = None
 
 # Configure Gemini API
-GEMINI_API_KEY = "AIzaSyBiwXGFp4AMSi-Ki4kO9iZ3w40OanNt_b4"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyBiwXGFp4AMSi-Ki4kO9iZ3w40OanNt_b4")
 genai.configure(api_key=GEMINI_API_KEY)
 
-app = FastAPI(title="Enhanced Patient Chatbot", description="A RAG-enabled chatbot using simple document search")
+app = FastAPI(
+    title="Enhanced Patient Chatbot",
+    description="A RAG-enabled chatbot using simple document search",
+    version="1.0.0"
+)
+
+# Configure CORS for frontend integration
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:19006").split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 # Global variables for document storage
 document_chunks = []

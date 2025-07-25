@@ -299,4 +299,68 @@ db.system.profile.find().limit(5).sort({ts:-1}).pretty()
 
 ---
 
-*This MongoDB architecture provides scalable, secure, and maintainable data storage for the HealthTech platform with proper separation of concerns across services.*
+## 🤖 **TRACK 2: AI CHATBOT DATA ARCHITECTURE**
+
+### **Session Memory System**
+Track 2 uses a session-based memory system for conversation management:
+
+```javascript
+// Conversation Session (In-Memory)
+{
+  session_id: "web_1234567890",
+  messages: [
+    {
+      role: "user",
+      content: "What are the symptoms of malaria?",
+      timestamp: ISODate
+    },
+    {
+      role: "assistant",
+      content: "Based on medical documents, malaria symptoms include...",
+      sources: ["Malaria_guide.pdf"],
+      confidence: 0.85,
+      timestamp: ISODate
+    }
+  ],
+  created_at: ISODate,
+  last_activity: ISODate
+}
+```
+
+### **Document Processing System**
+```javascript
+// Document Metadata (File-based)
+{
+  filename: "Malaria_guide.pdf",
+  pages: 25,
+  chunks: 30,
+  processed_at: ISODate,
+  file_size: "2.5MB",
+  status: "processed"
+}
+
+// Document Chunks (RAG System)
+{
+  chunk_id: "malaria_guide_chunk_001",
+  content: "Malaria is a life-threatening disease...",
+  source_file: "Malaria_guide.pdf",
+  page_number: 1,
+  chunk_index: 0,
+  keywords: ["malaria", "symptoms", "fever", "treatment"]
+}
+```
+
+### **Track 2 Data Flow**
+```
+User Query → Session Memory → Document Search → AI Processing → Response with Sources
+```
+
+### **Integration with Track 1**
+- **No direct database integration**: Track 2 operates independently
+- **Frontend integration**: Seamless UI integration via API calls
+- **Session isolation**: Each conversation is independent
+- **Document-based knowledge**: Medical PDFs provide knowledge base
+
+---
+
+*This modular MongoDB architecture enables clear separation of responsibilities and optimal scalability for the HealthTech platform, with Track 2 providing AI capabilities through session-based memory and document processing.*
