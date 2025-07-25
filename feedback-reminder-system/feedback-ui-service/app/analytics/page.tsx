@@ -11,9 +11,10 @@ type FeedbackAnalytics = {
     neutral: number;
   };
   average_rating: number;
-  top_keywords: string[];
-  department_breakdown: Record<string, number>;
-  language_breakdown: Record<string, number>;
+  top_keywords?: string[];
+  department_breakdown?: Record<string, number>;
+  language_breakdown?: Record<string, number>;
+  department_stats?: any[];
 };
 
 type Feedback = {
@@ -41,11 +42,30 @@ const AnalyticsPage = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/feedback/analytics`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/analytics`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      setAnalytics(data);
+      // Ensure data has default values to prevent undefined errors
+      setAnalytics({
+        total_feedback: data?.total_feedback || 0,
+        average_rating: data?.average_rating || 0,
+        sentiment_distribution: data?.sentiment_distribution || { positive: 0, negative: 0, neutral: 0 },
+        department_stats: data?.department_stats || [],
+        top_keywords: data?.top_keywords || [],
+        department_breakdown: data?.department_breakdown || {},
+        language_breakdown: data?.language_breakdown || {}
+      });
     } catch (error) {
       console.error("Error fetching analytics:", error);
+      // Set default analytics data on error
+      setAnalytics({
+        total_feedback: 0,
+        average_rating: 0,
+        sentiment_distribution: { positive: 0, negative: 0, neutral: 0 },
+        department_stats: []
+      });
     }
   };
 
@@ -54,12 +74,18 @@ const AnalyticsPage = () => {
       const url = selectedSentiment === "all"
         ? `${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/feedback/list`
         : `${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/feedback/list?sentiment=${selectedSentiment}`;
-      
+
       const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      setFeedbacks(data);
+      // Ensure data is an array to prevent map errors
+      setFeedbacks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching feedbacks:", error);
+      // Set empty array on error to prevent map errors
+      setFeedbacks([]);
     } finally {
       setLoading(false);
     }
@@ -94,7 +120,7 @@ const AnalyticsPage = () => {
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold text-gray-700">Average Rating</h3>
               <p className="text-3xl font-bold text-yellow-500">
-                {analytics.average_rating.toFixed(1)} ⭐
+                {(analytics?.average_rating || 0).toFixed(1)} ⭐
               </p>
             </div>
 
