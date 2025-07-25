@@ -1,0 +1,132 @@
+# Railway Dockerfile for Track 1 - Patient Communication System
+FROM node:18-alpine AS frontend-builder
+
+# Build the frontend
+WORKDIR /app/frontend
+COPY feedback-reminder-system/feedback-ui-service/package*.json ./
+RUN npm ci --only=production
+
+COPY feedback-reminder-system/feedback-ui-service/ ./
+ENV NODE_ENV=production
+ENV NEXT_PUBLIC_FEEDBACK_API_URL=/api/feedback
+ENV NEXT_PUBLIC_AUTH_API_URL=/api/auth
+ENV NEXT_PUBLIC_REMINDER_API_URL=/api/reminder
+ENV NEXT_PUBLIC_NOTIFICATION_API_URL=/api/notification
+ENV NEXT_PUBLIC_TRANSLATION_API_URL=/api/translation
+
+RUN npm run build
+
+# Python backend stage
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create requirements file with all dependencies
+RUN echo "fastapi==0.104.1\n\
+uvicorn[standard]==0.24.0\n\
+pymongo==4.6.0\n\
+python-jose[cryptography]==3.3.0\n\
+passlib[bcrypt]==1.7.4\n\
+python-multipart==0.0.6\n\
+pydantic==2.5.0\n\
+python-dotenv==1.0.0\n\
+twilio==8.10.0\n\
+requests==2.31.0\n\
+email-validator==2.1.0\n\
+motor==3.3.2\n\
+aiofiles==23.2.1\n\
+jinja2==3.1.2\n\
+python-dateutil==2.8.2" > requirements.txt
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY auth/ ./auth/
+COPY feedback/ ./feedback/
+COPY reminder/ ./reminder/
+COPY notification/ ./notification/
+COPY translation/ ./translation/
+COPY shared/ ./shared/
+
+# Copy built frontend
+COPY --from=frontend-builder /app/frontend/.next ./static/
+COPY --from=frontend-builder /app/frontend/public ./static/public/
+
+# Create a unified main application
+RUN echo 'from fastapi import FastAPI, Request\n\
+from fastapi.staticfiles import StaticFiles\n\
+from fastapi.responses import FileResponse\n\
+from fastapi.middleware.cors import CORSMiddleware\n\
+import uvicorn\n\
+import os\n\
+\n\
+# Import all service apps\n\
+from auth.main import app as auth_app\n\
+from feedback.main import app as feedback_app\n\
+from reminder.main import app as reminder_app\n\
+from notification.main import app as notification_app\n\
+from translation.main import app as translation_app\n\
+\n\
+# Create main app\n\
+app = FastAPI(title="HealthTech Track 1 - Patient Communication System")\n\
+\n\
+# Add CORS middleware\n\
+app.add_middleware(\n\
+    CORSMiddleware,\n\
+    allow_origins=["*"],\n\
+    allow_credentials=True,\n\
+    allow_methods=["*"],\n\
+    allow_headers=["*"],\n\
+)\n\
+\n\
+# Mount sub-applications\n\
+app.mount("/api/auth", auth_app)\n\
+app.mount("/api/feedback", feedback_app)\n\
+app.mount("/api/reminder", reminder_app)\n\
+app.mount("/api/notification", notification_app)\n\
+app.mount("/api/translation", translation_app)\n\
+\n\
+# Mount static files\n\
+app.mount("/static", StaticFiles(directory="static"), name="static")\n\
+\n\
+# Serve frontend\n\
+@app.get("/{full_path:path}")\n\
+async def serve_frontend(full_path: str):\n\
+    if full_path.startswith("api/"):\n\
+        return {"error": "API endpoint not found"}\n\
+    \n\
+    # Serve index.html for all non-API routes\n\
+    return FileResponse("static/index.html")\n\
+\n\
+@app.get("/")\n\
+async def root():\n\
+    return FileResponse("static/index.html")\n\
+\n\
+if __name__ == "__main__":\n\
+    port = int(os.environ.get("PORT", 8000))\n\
+    uvicorn.run(app, host="0.0.0.0", port=port)' > main_railway.py
+
+# Health check endpoint
+RUN echo '@app.get("/health")\n\
+async def health_check():\n\
+    return {\n\
+        "status": "healthy",\n\
+        "services": {\n\
+            "auth": "running",\n\
+            "feedback": "running",\n\
+            "reminder": "running",\n\
+            "notification": "running",\n\
+            "translation": "running"\n\
+        }\n\
+    }' >> main_railway.py
+
+EXPOSE $PORT
+
+CMD python main_railway.py

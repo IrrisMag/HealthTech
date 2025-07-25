@@ -1,0 +1,69 @@
+{
+  "track1": {
+    "name": "HealthTech Track 1 - Patient Communication System",
+    "dockerfile": "Dockerfile.railway.track1",
+    "environment_variables": {
+      "MONGODB_URI": "mongodb+srv://irris:irris@healthtech.khb7ck1.mongodb.net/?retryWrites=true&w=majority&appName=healthtech",
+      "DB_NAME_AUTH": "healthtech_auth",
+      "DB_NAME_FEEDBACK": "healthtech_feedback",
+      "DB_NAME_REMINDER": "healthtech_reminders",
+      "DB_NAME_NOTIFICATION": "healthtech_notifications",
+      "DB_NAME_TRANSLATION": "healthtech_translations",
+      "JWT_SECRET": "your-super-secure-jwt-secret-change-in-production",
+      "JWT_ALGORITHM": "HS256",
+      "TWILIO_ACCOUNT_SID": "ACc1fdc9a118ed916a6a445b5a295248de",
+      "TWILIO_AUTH_TOKEN": "0a681767a17f7ef5c1bccdcaf6b52b46",
+      "TWILIO_PHONE_NUMBER": "+18398883585",
+      "ENVIRONMENT": "production",
+      "LOG_LEVEL": "INFO",
+      "CORS_ORIGINS": "https://*.railway.app,https://*.vercel.app"
+    }
+  },
+  "track2": {
+    "name": "HealthTech Track 2 - AI Medical Assistant",
+    "dockerfile": "Dockerfile.railway.track2",
+    "environment_variables": {
+      "GOOGLE_API_KEY": "AIzaSyBiwXGFp4AMSi-Ki4kO9iZ3w40OanNt_b4",
+      "GEMINI_API_KEY": "AIzaSyBiwXGFp4AMSi-Ki4kO9iZ3w40OanNt_b4",
+      "MONGODB_URI": "mongodb+srv://irris:irris@healthtech.khb7ck1.mongodb.net/?retryWrites=true&w=majority&appName=healthtech",
+      "DB_NAME": "healthtech_chatbot",
+      "DB_NAME_CHATBOT": "healthtech_chatbot",
+      "ENVIRONMENT": "production",
+      "LOG_LEVEL": "INFO",
+      "CHUNK_SIZE": "200",
+      "CHUNK_OVERLAP": "50",
+      "MAX_TOKENS": "1000",
+      "TEMPERATURE": "0.7",
+      "MODEL_NAME": "gemini-pro",
+      "CORS_ORIGINS": "https://*.railway.app,https://*.vercel.app"
+    }
+  },
+  "deployment_urls": {
+    "track1_suggested": "healthtech-patient-system",
+    "track2_suggested": "healthtech-ai-assistant"
+  },
+  "judge_access": {
+    "track1_endpoints": [
+      "/",
+      "/docs",
+      "/health",
+      "/api/auth",
+      "/api/feedback",
+      "/api/reminder",
+      "/api/notification",
+      "/api/translation"
+    ],
+    "track2_endpoints": [
+      "/",
+      "/chatbot",
+      "/mobile",
+      "/docs",
+      "/health",
+      "/api/chatbot/chat"
+    ],
+    "test_credentials": {
+      "email": "judge@healthtech.demo",
+      "password": "JudgeDemo2024!"
+    }
+  }
+}
