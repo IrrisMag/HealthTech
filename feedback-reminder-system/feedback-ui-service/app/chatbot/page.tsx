@@ -19,7 +19,7 @@ const ChatbotPage = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm your AI health assistant powered by medical documents. I can help answer questions about health, medical conditions, symptoms, and general wellness based on reliable medical sources. How can I assist you today?",
+      text: "Hello!? I'm your AI health assistant powered by medical documents. I can help answer questions about health, medical conditions, symptoms, and general wellness based on reliable medical sources. How can I assist you today?",
       isUser: false,
       timestamp: new Date(),
     }
