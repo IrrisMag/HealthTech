@@ -66,7 +66,7 @@ const page = (props: Props) => {
   };
   return (
     <div className="h-screen flex">
-      <div className=" flex-1 bg-[url('/images/backbground.png')] bg-cover bg-center"></div>
+      <div className=" flex-1 bg-gradient-to-br from-blue-50 to-indigo-100"></div>
       <div className="flex-1 pl-16 flex items-center ">
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-6 max-w-[600px] flex-1">
           <h1 className="text-3xl font-bold text-blue-800">🏥 Patient Feedback</h1>

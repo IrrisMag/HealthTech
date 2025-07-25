@@ -5,6 +5,23 @@ const REMINDER_API_URL = process.env.NEXT_PUBLIC_REMINDER_API_URL;
 const NOTIFICATION_API_URL = process.env.NEXT_PUBLIC_NOTIFICATION_API_URL;
 const TRANSLATION_API_URL = process.env.NEXT_PUBLIC_TRANSLATION_API_URL;
 
+// Track 1 and Track 2 API URLs
+const TRACK1_API_URL = process.env.NEXT_PUBLIC_TRACK1_API_URL || 'https://track1-production.up.railway.app';
+const TRACK2_API_URL = process.env.NEXT_PUBLIC_TRACK2_API_URL || 'https://healthtech-production-e602.up.railway.app';
+
+// API Configuration function
+export function getApiConfig() {
+  return {
+    track1: TRACK1_API_URL,
+    track2: TRACK2_API_URL,
+    auth: AUTH_API_URL,
+    feedback: FEEDBACK_API_URL,
+    reminder: REMINDER_API_URL,
+    notification: NOTIFICATION_API_URL,
+    translation: TRANSLATION_API_URL
+  };
+}
+
 export async function getFeedbacks(token: string) {
   const res = await fetch(`${FEEDBACK_API_URL}/feedback`, {
     headers: {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Home, MessageSquare, Bot, BarChart3 } from "lucide-react";
+import { Home, MessageSquare, Bot, BarChart3, Calendar } from "lucide-react";
 
 const Navigation = () => {
   const pathname = usePathname();
@@ -11,6 +11,7 @@ const Navigation = () => {
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/feedback", label: "Feedback", icon: MessageSquare },
+    { href: "/reminders", label: "Reminders", icon: Calendar },
     { href: "/chatbot", label: "AI Assistant", icon: Bot },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
   ];

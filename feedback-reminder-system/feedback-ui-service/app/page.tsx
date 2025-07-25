@@ -18,6 +18,11 @@ export default function Home() {
                 📝 Submit Feedback
               </Button>
             </Link>
+            <Link href="/reminders">
+              <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+                📅 Schedule Reminders
+              </Button>
+            </Link>
             <Link href="/chatbot">
               <Button size="lg" className="bg-green-600 hover:bg-green-700">
                 🤖 Health Assistant
@@ -31,13 +36,21 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-4 gap-6 max-w-7xl mx-auto">
           <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
             <h3 className="text-lg font-semibold mb-3 flex items-center">
               🧠 AI-Powered Feedback Analysis
             </h3>
             <p className="text-gray-600">
               Automatic sentiment analysis, keyword extraction, and priority assignment for patient feedback
+            </p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-orange-500">
+            <h3 className="text-lg font-semibold mb-3 flex items-center">
+              📅 Smart Appointment Reminders
+            </h3>
+            <p className="text-gray-600">
+              Automated SMS reminders for appointments and medications via Twilio integration
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">

@@ -55,7 +55,7 @@ const ChatbotPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'http://chatbot.localhost:8002'}/chat`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_TRACK2_API_URL || 'https://healthtech-production-e602.up.railway.app'}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
