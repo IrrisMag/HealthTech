@@ -11,9 +11,9 @@
       "DB_NAME_TRANSLATION": "healthtech_translations",
       "JWT_SECRET": "your-super-secure-jwt-secret-change-in-production",
       "JWT_ALGORITHM": "HS256",
-      "TWILIO_ACCOUNT_SID": "ACc1fdc9a118ed916a6a445b5a295248de",
-      "TWILIO_AUTH_TOKEN": "0a681767a17f7ef5c1bccdcaf6b52b46",
-      "TWILIO_PHONE_NUMBER": "+18398883585",
+      "TWILIO_ACCOUNT_SID": "your-twilio-account-sid-here",
+      "TWILIO_AUTH_TOKEN": "your-twilio-auth-token-here",
+      "TWILIO_PHONE_NUMBER": "+1234567890",
       "ENVIRONMENT": "production",
       "LOG_LEVEL": "INFO",
       "CORS_ORIGINS": "https://*.railway.app,https://*.vercel.app"
@@ -23,9 +23,9 @@
     "name": "HealthTech Track 2 - AI Medical Assistant",
     "dockerfile": "Dockerfile.railway.track2",
     "environment_variables": {
-      "GOOGLE_API_KEY": "AIzaSyBiwXGFp4AMSi-Ki4kO9iZ3w40OanNt_b4",
-      "GEMINI_API_KEY": "AIzaSyBiwXGFp4AMSi-Ki4kO9iZ3w40OanNt_b4",
-      "MONGODB_URI": "mongodb+srv://irris:irris@healthtech.khb7ck1.mongodb.net/?retryWrites=true&w=majority&appName=healthtech",
+      "GOOGLE_API_KEY": "your-google-api-key-here",
+      "GEMINI_API_KEY": "your-gemini-api-key-here",
+      "MONGODB_URI": "mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority",
       "DB_NAME": "healthtech_chatbot",
       "DB_NAME_CHATBOT": "healthtech_chatbot",
       "ENVIRONMENT": "production",
@@ -63,7 +63,7 @@
     ],
     "test_credentials": {
       "email": "judge@healthtech.demo",
-      "password": "JudgeDemo2024!"
+      "password": "your-demo-password-here"
     }
   }
 }
