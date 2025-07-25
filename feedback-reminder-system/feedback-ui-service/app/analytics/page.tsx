@@ -42,20 +42,40 @@ const AnalyticsPage = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/analytics`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/feedback/list`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      // Ensure data has default values to prevent undefined errors
+      const feedbackList = data.feedback || [];
+
+      // Process feedback list to generate analytics
+      const totalFeedback = feedbackList.length;
+      const ratings = feedbackList.filter((f: any) => f.rating).map((f: any) => f.rating);
+      const averageRating = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
+
+      // Count departments
+      const departmentCounts: Record<string, number> = {};
+      const categoryCounts: Record<string, number> = {};
+
+      feedbackList.forEach((feedback: any) => {
+        if (feedback.department) {
+          departmentCounts[feedback.department] = (departmentCounts[feedback.department] || 0) + 1;
+        }
+        if (feedback.category) {
+          categoryCounts[feedback.category] = (categoryCounts[feedback.category] || 0) + 1;
+        }
+      });
+
+      // Set analytics data
       setAnalytics({
-        total_feedback: data?.total_feedback || 0,
-        average_rating: data?.average_rating || 0,
-        sentiment_distribution: data?.sentiment_distribution || { positive: 0, negative: 0, neutral: 0 },
-        department_stats: data?.department_stats || [],
-        top_keywords: data?.top_keywords || [],
-        department_breakdown: data?.department_breakdown || {},
-        language_breakdown: data?.language_breakdown || {}
+        total_feedback: totalFeedback,
+        average_rating: averageRating,
+        sentiment_distribution: { positive: 0, negative: 0, neutral: 0 }, // Will be calculated if sentiment data is available
+        department_stats: [],
+        top_keywords: [],
+        department_breakdown: departmentCounts,
+        language_breakdown: {}
       });
     } catch (error) {
       console.error("Error fetching analytics:", error);
@@ -64,7 +84,10 @@ const AnalyticsPage = () => {
         total_feedback: 0,
         average_rating: 0,
         sentiment_distribution: { positive: 0, negative: 0, neutral: 0 },
-        department_stats: []
+        department_stats: [],
+        top_keywords: [],
+        department_breakdown: {},
+        language_breakdown: {}
       });
     }
   };

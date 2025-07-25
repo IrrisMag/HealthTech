@@ -39,9 +39,9 @@ const page = (props: Props) => {
     try {
       const feedbackData = {
         patient_id: formData.patient_id || `PAT${Date.now()}`,
-        text_feedback: formData.message,
+        comment: formData.message,
         rating: formData.rating,
-        feedback_type: formData.feedback_type,
+        category: formData.feedback_type,
         language: formData.language,
         department: formData.department
       };
