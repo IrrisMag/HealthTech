@@ -28,29 +28,6 @@ services:
     depends_on:
       - mongo
 
-  analysis:
-    build: ./analysis
-    environment:
-      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
-      - DB_NAME=${DB_NAME_ANALYSIS:-reminderdb_analysis}
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
-      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
-      - ENVIRONMENT=${ENVIRONMENT:-development}
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      # Analytics specific environment variables
-      - PANDAS_VERSION=${PANDAS_VERSION:-latest}
-      - NUMPY_VERSION=${NUMPY_VERSION:-latest}
-      - SCIKIT_LEARN_VERSION=${SCIKIT_LEARN_VERSION:-latest}
-      - DATA_SERVICE_URL=${DATA_SERVICE_URL:-http://data:8000}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.analysis.rule=Host(`analysis.localhost`)"
-      - "traefik.http.services.analysis.loadbalancer.server.port=8000"
-    depends_on:
-      - mongo
-      - auth
-      - data
-
   data:
     build: ./data
     environment:
@@ -65,13 +42,93 @@ services:
       - ALLOWED_FILE_TYPES=${ALLOWED_FILE_TYPES:-csv,json,xlsx}
       - DATA_RETENTION_DAYS=${DATA_RETENTION_DAYS:-2555}  # 7 years for healthcare
       - ENCRYPTION_ENABLED=${ENCRYPTION_ENABLED:-true}
+      # DHIS2 Integration
+      - DHIS2_BASE_URL=${DHIS2_BASE_URL:-https://dhis2.dgh.cm}
+      - DHIS2_USERNAME=${DHIS2_USERNAME:-admin}
+      - DHIS2_PASSWORD=${DHIS2_PASSWORD:-district}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.data.rule=Host(`data.localhost`)"
-      - "traefik.http.services.data.loadbalancer.server.port=8000"
+      - "traefik.http.routers.data-track3.rule=Host(`data-track3.localhost`)"
+      - "traefik.http.services.data-track3.loadbalancer.server.port=8000"
     depends_on:
       - mongo
       - auth
+
+  forecast:
+    build: ./forecast
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME_FORECAST:-reminderdb_forecast}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # Forecasting specific environment variables
+      - DATA_SERVICE_URL=${DATA_SERVICE_URL:-http://data:8000}
+      - MODEL_UPDATE_INTERVAL=${MODEL_UPDATE_INTERVAL:-24}  # hours
+      - FORECAST_HORIZON_DAYS=${FORECAST_HORIZON_DAYS:-30}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.forecast-track3.rule=Host(`forecast-track3.localhost`)"
+      - "traefik.http.services.forecast-track3.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+      - auth
+      - data
+
+  optimization:
+    build: ./optimization
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - DATABASE_NAME=${DATABASE_NAME:-inventory_optimization}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:8000}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secure-jwt-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # Optimization specific environment variables
+      - FORECASTING_SERVICE_URL=${FORECASTING_SERVICE_URL:-http://forecast:8000}
+      - INGESTION_SERVICE_URL=${INGESTION_SERVICE_URL:-http://data:8000}
+      - OPTIMIZATION_MODEL=${OPTIMIZATION_MODEL:-linear_programming}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.optimization-track3.rule=Host(`optimization-track3.localhost`)"
+      - "traefik.http.services.optimization-track3.loadbalancer.server.port=8000"
+    depends_on:
+      - mongo
+      - auth
+      - data
+      - forecast
+      - redis
+
+  dashboard:
+    build: ./tracks/track3/dashboard
+    environment:
+      - NEXT_PUBLIC_DATA_API_URL=http://data-track3.localhost
+      - NEXT_PUBLIC_FORECAST_API_URL=http://forecast-track3.localhost
+      - NEXT_PUBLIC_OPTIMIZATION_API_URL=http://optimization-track3.localhost
+      - NEXT_PUBLIC_AUTH_API_URL=http://auth-track3.localhost
+      - NEXT_PUBLIC_DASHBOARD_TITLE=Blood Bank Dashboard - Douala General Hospital
+      - NEXT_PUBLIC_HOSPITAL_NAME=Douala General Hospital
+      - NEXT_PUBLIC_REFRESH_INTERVAL=30000
+      - NODE_ENV=${NODE_ENV:-development}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard-track3.rule=Host(`dashboard-track3.localhost`)"
+      - "traefik.http.services.dashboard-track3.loadbalancer.server.port=3003"
+    depends_on:
+      - data
+      - forecast
+      - optimization
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_track3:/data
+    command: redis-server --appendonly yes
 
   traefik:
     image: traefik:v2.10
@@ -87,3 +144,4 @@ services:
 
 volumes:
   mongo_data_track3:
+  redis_data_track3:

@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # HealthTech Platform - Track 3 Deployment
-# Services: Auth, Analysis, Data
+# AI-Enhanced Blood Bank Stock Monitoring and Forecasting System
+# Services: Auth, Data Ingestion, Forecasting, Optimization, Dashboard
 
 set -e  # Exit on any error
 
@@ -9,10 +10,11 @@ set -e  # Exit on any error
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🚀 Deploying HealthTech Track 3...${NC}"
-echo -e "${BLUE}Services: Auth, Analysis, Data Management${NC}"
+echo -e "${BLUE}🩸 Deploying HealthTech Track 3 - AI-Enhanced Blood Bank System...${NC}"
+echo -e "${BLUE}Services: Data Ingestion, Forecasting, Optimization, Dashboard${NC}"
 
 # Load environment variables if .env exists
 if [[ -f ".env" ]]; then
@@ -34,7 +36,7 @@ docker-compose -f docker-compose.track3.yml up --build -d
 
 # Wait for services to be ready
 echo -e "${BLUE}⏳ Waiting for services to be ready...${NC}"
-sleep 15
+sleep 45
 
 # Health checks
 echo -e "${BLUE}🏥 Performing health checks...${NC}"
@@ -46,18 +48,32 @@ else
     echo -e "${YELLOW}⚠️  Auth service health check failed${NC}"
 fi
 
-# Check analysis service
-if curl -f -s http://analysis.localhost/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Analysis service is healthy${NC}"
+# Check data ingestion service
+if curl -f -s http://data-track3.localhost/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Data Ingestion service is healthy${NC}"
 else
-    echo -e "${YELLOW}⚠️  Analysis service health check failed${NC}"
+    echo -e "${YELLOW}⚠️  Data Ingestion service health check failed${NC}"
 fi
 
-# Check data service
-if curl -f -s http://data.localhost/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Data service is healthy${NC}"
+# Check forecasting service
+if curl -f -s http://forecast-track3.localhost/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Forecasting service is healthy${NC}"
 else
-    echo -e "${YELLOW}⚠️  Data service health check failed${NC}"
+    echo -e "${YELLOW}⚠️  Forecasting service health check failed${NC}"
+fi
+
+# Check optimization service
+if curl -f -s http://optimization-track3.localhost/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Optimization service is healthy${NC}"
+else
+    echo -e "${YELLOW}⚠️  Optimization service health check failed${NC}"
+fi
+
+# Check dashboard
+if curl -f -s http://dashboard-track3.localhost > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Blood Bank Dashboard is healthy${NC}"
+else
+    echo -e "${YELLOW}⚠️  Blood Bank Dashboard health check failed${NC}"
 fi
 
 # Show running services
@@ -66,19 +82,30 @@ docker-compose -f docker-compose.track3.yml ps
 
 echo -e "${GREEN}🎉 Track 3 deployment completed!${NC}"
 echo ""
-echo -e "${BLUE}📍 Available endpoints:${NC}"
-echo "  - Auth: http://auth-track3.localhost"
-echo "  - Analysis: http://analysis.localhost"
-echo "  - Data: http://data.localhost"
-echo "  - Traefik Dashboard: http://localhost:8082"
+echo -e "${BLUE}🩸 Blood Bank System Endpoints:${NC}"
+echo "  🔐 Auth Service: http://auth-track3.localhost"
+echo "  📊 Data Ingestion: http://data-track3.localhost"
+echo "  📈 Forecasting API: http://forecast-track3.localhost"
+echo "  ⚡ Optimization API: http://optimization-track3.localhost"
+echo "  🩸 Blood Bank Dashboard: http://dashboard-track3.localhost"
+echo "  🔍 Traefik Dashboard: http://localhost:8082"
+echo ""
+echo -e "${BLUE}📚 API Documentation:${NC}"
+echo "  📊 Data API Docs: http://data-track3.localhost/docs"
+echo "  📈 Forecast API Docs: http://forecast-track3.localhost/docs"
+echo "  ⚡ Optimization API Docs: http://optimization-track3.localhost/docs"
 echo ""
 echo -e "${BLUE}🔐 Default admin credentials:${NC}"
 echo "  Email: admin@hospital.com"
 echo "  Password: admin123"
 echo -e "${YELLOW}  ⚠️  CHANGE THIS PASSWORD IMMEDIATELY!${NC}"
 echo ""
-echo -e "${BLUE}📊 Analytics Features:${NC}"
-echo "  - Health data analysis"
-echo "  - Predictive modeling"
-echo "  - Data visualization"
-echo "  - Secure data management"
+echo -e "${BLUE}🩸 Blood Bank Features:${NC}"
+echo "  - Real-time inventory monitoring"
+echo "  - ARIMA/XGBoost demand forecasting"
+echo "  - AI-powered optimization recommendations"
+echo "  - DHIS2 integration for data exchange"
+echo "  - Interactive D3.js dashboard visualizations"
+echo "  - PuLP/SciPy optimization algorithms"
+echo ""
+echo -e "${GREEN}🏥 Ready for blood bank operations at Douala General Hospital!${NC}"
