@@ -1,0 +1,56 @@
+[build]
+  # Build command
+  command = "npm run build"
+  
+  # Directory to publish
+  publish = "out"
+  
+  # Base directory for build
+  base = "tracks/track3/dashboard"
+
+[build.environment]
+  # Node.js version
+  NODE_VERSION = "18"
+  
+  # Environment variables for build
+  NEXT_PUBLIC_DATA_API_URL = "https://healthtech-production-e602.up.railway.app"
+  NEXT_PUBLIC_FORECAST_API_URL = "https://healthtech-production-e602.up.railway.app"
+  NEXT_PUBLIC_OPTIMIZATION_API_URL = "https://healthtech-production-e602.up.railway.app"
+  NEXT_PUBLIC_AUTH_API_URL = "https://healthtech-production-e602.up.railway.app"
+  NEXT_PUBLIC_APP_NAME = "Blood Bank Dashboard"
+  NEXT_PUBLIC_ENVIRONMENT = "production"
+  NEXT_PUBLIC_HOSPITAL_NAME = "Douala General Hospital"
+
+# Redirect rules for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://healthtech-production-e602.up.railway.app; font-src 'self' data:;"
+
+# Cache static assets
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# API proxy to avoid CORS issues (optional)
+[[redirects]]
+  from = "/api/*"
+  to = "https://healthtech-production-e602.up.railway.app/:splat"
+  status = 200
+  force = true
