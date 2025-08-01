@@ -67,8 +67,26 @@ export const fetchBloodInventory = async () => {
 
 export const fetchForecasts = async (days: number = 7): Promise<ForecastData[]> => {
   try {
-    const response = await forecastApi.get(`/forecast/batch?periods=${days}`)
-    return response.data.forecasts || []
+    // Fetch forecasts for all blood types
+    const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+    const forecastPromises = bloodTypes.map(async (bloodType) => {
+      try {
+        const response = await forecastApi.get(`/forecast/${bloodType}?periods=${days}`)
+        return response.data.forecasts.map((f: any) => ({
+          blood_type: bloodType,
+          date: f.date,
+          predicted_demand: f.predicted_demand,
+          confidence_interval_lower: f.lower_bound,
+          confidence_interval_upper: f.upper_bound,
+        }))
+      } catch (error) {
+        console.error(`Error fetching forecast for ${bloodType}:`, error)
+        return []
+      }
+    })
+
+    const results = await Promise.all(forecastPromises)
+    return results.flat()
   } catch (error) {
     console.error('Error fetching forecasts:', error)
     // Return mock data for development

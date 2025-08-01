@@ -30,11 +30,11 @@ export default function RealTimeAlerts({ data }: RealTimeAlertsProps) {
   const getAlertIcon = (type: string) => {
     switch (type) {
       case 'critical':
-        return ExclamationTriangleIcon
+        return AlertTriangle
       case 'warning':
-        return ExclamationTriangleIcon
+        return AlertTriangle
       default:
-        return InformationCircleIcon
+        return Info
     }
   }
 
@@ -76,7 +76,7 @@ export default function RealTimeAlerts({ data }: RealTimeAlertsProps) {
       >
         <div className="flex items-center">
           <div className="flex-shrink-0">
-            <BellIcon className="h-5 w-5 text-green-600" />
+            <Bell className="h-5 w-5 text-green-600" />
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-medium text-green-800">
@@ -127,7 +127,7 @@ export default function RealTimeAlerts({ data }: RealTimeAlertsProps) {
                       onClick={() => dismissAlert(alert.id)}
                       className={`ml-2 flex-shrink-0 ${styles.button} transition-colors`}
                     >
-                      <XMarkIcon className="h-4 w-4" />
+                      <X className="h-4 w-4" />
                     </button>
                   </div>
                   <p className={`mt-1 text-sm ${styles.message}`}>
