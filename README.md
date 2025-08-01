@@ -10,10 +10,11 @@
 ### 🎯 **Live Production Platform**
 | Service | URL | Status | Description |
 |---------|-----|--------|-------------|
-| 🏠 **Main Platform** | **[https://healthteh.netlify.app](https://healthteh.netlify.app)** | 🟢 LIVE | Complete healthcare platform |
+| 🏠 **TRACK1 AND TRACK2 UI** | **[https://healthteh.netlify.app](https://healthteh.netlify.app)** | 🟢 LIVE | Complete healthcare platform |
 | 📡 **Track 1 API** | **[https://track1-production.up.railway.app](https://track1-production.up.railway.app)** | 🟢 RUNNING | Patient Communication System |
 | 🤖 **Track 2 API** | **[https://healthtech-production-e602.up.railway.app](https://healthtech-production-e602.up.railway.app)** | 🟢 RUNNING | AI Medical Assistant |
-| 🩸 **Track 3 System** | **Railway Production** | ✅ LIVE | AI-Enhanced Blood Bank System |
+| 🩸 **Track 3 API** | **[https://healthtech-production-e602.up.railway.app](https://healthtech-production-e602.up.railway.app)** | 🟢 RUNNING | AI-Enhanced Blood Bank API |
+| 🩸 **Track 3 Dashboard** | **[https://track3-blood-bank-dashboard.netlify.app](https://track3-blood-bank-dashboard.netlify.app)** | 🟢 LIVE | Blood Bank Dashboard |
 
 ### 📚 **API Documentation (Live)**
 - **Track 1 Docs**: [https://track1-production.up.railway.app/docs](https://track1-production.up.railway.app/docs)
