@@ -31,11 +31,40 @@ export default function InventoryPage() {
       const data = await fetchBloodInventory()
       // Ensure data is an array
       if (Array.isArray(data)) {
-        setInventory(data)
+        // Validate and clean the data
+        const cleanedData = data.map(item => ({
+          ...item,
+          id: item.id || `item-${Date.now()}-${Math.random()}`,
+          blood_type: item.blood_type || 'O+',
+          quantity: item.quantity || 1,
+          status: item.status || 'available',
+          location: item.location || 'Main Storage',
+          temperature: item.temperature || 4.0,
+          expiry_date: item.expiry_date || new Date().toISOString(),
+          created_at: item.created_at || new Date().toISOString(),
+          updated_at: item.updated_at || new Date().toISOString()
+        }))
+        setInventory(cleanedData)
       } else {
         // If data is not an array, try to extract array from response
         const inventoryArray = data?.inventory || data?.data || []
-        setInventory(Array.isArray(inventoryArray) ? inventoryArray : [])
+        if (Array.isArray(inventoryArray)) {
+          const cleanedData = inventoryArray.map(item => ({
+            ...item,
+            id: item.id || `item-${Date.now()}-${Math.random()}`,
+            blood_type: item.blood_type || 'O+',
+            quantity: item.quantity || 1,
+            status: item.status || 'available',
+            location: item.location || 'Main Storage',
+            temperature: item.temperature || 4.0,
+            expiry_date: item.expiry_date || new Date().toISOString(),
+            created_at: item.created_at || new Date().toISOString(),
+            updated_at: item.updated_at || new Date().toISOString()
+          }))
+          setInventory(cleanedData)
+        } else {
+          setInventory([])
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load inventory')
@@ -183,8 +212,8 @@ export default function InventoryPage() {
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold text-white ${getBloodTypeColor(item.blood_type)}`}>
                   {item.blood_type}
                 </span>
-                <span className={`status-indicator ${getStatusColor(item.status)}`}>
-                  {item.status.toUpperCase()}
+                <span className={`status-indicator ${getStatusColor(item.status || 'available')}`}>
+                  {(item.status || 'available').toUpperCase()}
                 </span>
               </div>
 
