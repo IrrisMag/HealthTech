@@ -1,32 +1,27 @@
+from fastapi import HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
 import os
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://auth:8000/auth/login")
-JWT_SECRET = os.getenv("JWT_SECRET", "your_jwt_secret_here")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+security = HTTPBearer()
 
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key")
+ALGORITHM = "HS256"
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Validate JWT token and return user info"""
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return payload
-    except JWTError:
-        raise credentials_exception
-
-
-def require_roles(*roles):
-    def checker(user=Depends(get_current_user)):
-        user_roles = user.get("roles", [])
-        if not any(role in user_roles for role in roles):
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
             raise HTTPException(
-                status_code=403, detail="Insufficient permissions"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials"
             )
-        return user
-    return checker
+        return {"user_id": user_id, "username": payload.get("username")}
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials"
+        )
