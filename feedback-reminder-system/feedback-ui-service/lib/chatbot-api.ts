@@ -1,4 +1,5 @@
-const TRACK2_API_URL = process.env.NEXT_PUBLIC_TRACK2_API_URL || 'https://healthtech-production-4917.up.railway.app';
+// Force the correct URL to override any cached environment variables
+const TRACK2_API_URL = 'https://healthtech-production-4917.up.railway.app';
 
 export interface ChatMessage {
   message: string;
