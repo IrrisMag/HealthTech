@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthTech Platform - Emergency Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .chat-container {
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        .bot-message {
+            background: #f1f8e9;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+        }
+        input {
+            width: 70%;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            width: 25%;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 HealthTech Platform</h1>
+        <h2>AI Medical Assistant - Emergency Fix</h2>
+        
+        <div id="status" class="status success">
+            ✅ Connected to Track 2 Backend: https://healthtech-production-4917.up.railway.app
+        </div>
+        
+        <div class="chat-container">
+            <div id="chat-messages">
+                <div class="message bot-message">
+                    <strong>AI Assistant:</strong> Hello! I'm your AI health assistant. I can help answer questions about health, medical conditions, symptoms, and general wellness. How can I assist you today?
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <input type="text" id="messageInput" placeholder="Type your health question here..." onkeypress="handleKeyPress(event)">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h3>🔧 Quick Test Links:</h3>
+            <p><a href="https://healthtech-production-4917.up.railway.app/health" target="_blank" style="color: #ffeb3b;">Test Backend Health</a></p>
+            <p><a href="https://healthtech-production-4917.up.railway.app/docs" target="_blank" style="color: #ffeb3b;">View API Documentation</a></p>
+            <p><a href="https://healthteh.netlify.app" target="_blank" style="color: #ffeb3b;">Return to Main Frontend</a></p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://healthtech-production-4917.up.railway.app';
+        let sessionId = 'emergency-fix-' + Date.now();
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage('user', message);
+            input.value = '';
+            
+            // Show loading
+            const loadingId = addMessage('bot', '🤔 Thinking...');
+            
+            try {
+                const response = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: sessionId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Remove loading message
+                document.getElementById(loadingId).remove();
+                
+                // Add bot response
+                addMessage('bot', data.response || 'Sorry, I could not process your request.');
+                
+                // Update status
+                updateStatus('success', '✅ Connected and working!');
+                
+            } catch (error) {
+                // Remove loading message
+                document.getElementById(loadingId).remove();
+                
+                // Add error message
+                addMessage('bot', `❌ Connection Error: ${error.message}`);
+                
+                // Update status
+                updateStatus('error', `❌ Connection failed: ${error.message}`);
+            }
+        }
+        
+        function addMessage(type, text) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            const messageId = 'msg-' + Date.now() + '-' + Math.random();
+            
+            messageDiv.id = messageId;
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.innerHTML = `<strong>${type === 'user' ? 'You' : 'AI Assistant'}:</strong> ${text}`;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            return messageId;
+        }
+        
+        function updateStatus(type, message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        // Test connection on load
+        window.onload = async function() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    updateStatus('success', '✅ Backend is healthy and ready!');
+                } else {
+                    updateStatus('error', '❌ Backend health check failed');
+                }
+            } catch (error) {
+                updateStatus('error', `❌ Cannot reach backend: ${error.message}`);
+            }
+        };
+    </script>
+</body>
+</html>
