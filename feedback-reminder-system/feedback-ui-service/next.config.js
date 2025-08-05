@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // Use standalone for better compatibility
+  output: 'standalone',
   trailingSlash: true,
   // Disable source maps in production for faster builds
   productionBrowserSourceMaps: false,
@@ -18,6 +19,11 @@ const nextConfig = {
   },
   // Fix hydration issues
   reactStrictMode: false,
+  // Reduce memory usage
+  experimental: {
+    workerThreads: false,
+    cpus: 1
+  }
 }
 
 module.exports = nextConfig
