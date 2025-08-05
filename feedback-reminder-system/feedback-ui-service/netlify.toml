@@ -1,35 +1,65 @@
 [build]
+  # Build command
   command = "npm run build"
-  publish = ".next"
+  
+  # Directory to publish
+  publish = "out"
 
 [build.environment]
+  # Node.js version
   NODE_VERSION = "18"
-  NPM_FLAGS = "--production=false"
-
-# Production environment variables
-[context.production.environment]
+  
+  # Environment variables for build
   NEXT_PUBLIC_TRACK1_API_URL = "https://track1-production.up.railway.app"
-  NEXT_PUBLIC_TRACK2_API_URL = "https://healthtech-production-e602.up.railway.app"
+  NEXT_PUBLIC_TRACK2_API_URL = "https://healthtech-production-4917.up.railway.app"
   NEXT_PUBLIC_AUTH_API_URL = "https://track1-production.up.railway.app"
   NEXT_PUBLIC_FEEDBACK_API_URL = "https://track1-production.up.railway.app"
   NEXT_PUBLIC_REMINDER_API_URL = "https://track1-production.up.railway.app"
   NEXT_PUBLIC_NOTIFICATION_API_URL = "https://track1-production.up.railway.app"
   NEXT_PUBLIC_TRANSLATION_API_URL = "https://track1-production.up.railway.app"
-  NEXT_PUBLIC_CHATBOT_API_URL = "https://healthtech-production-e602.up.railway.app"
+  NEXT_PUBLIC_CHATBOT_API_URL = "https://healthtech-production-4917.up.railway.app"
   NEXT_PUBLIC_APP_NAME = "HealthTech Platform"
   NEXT_PUBLIC_APP_VERSION = "1.0.0"
   NEXT_PUBLIC_ENVIRONMENT = "production"
+  NEXT_PUBLIC_HOSPITAL_NAME = "Douala General Hospital"
 
-# Headers for CORS
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-
-# Redirects for SPA routing
+# Redirect rules for SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://track1-production.up.railway.app https://healthtech-production-4917.up.railway.app; font-src 'self' data:;"
+
+# Cache static assets
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# API proxy to avoid CORS issues for Track 1
+[[redirects]]
+  from = "/api/track1/*"
+  to = "https://track1-production.up.railway.app/:splat"
+  status = 200
+  force = true
+
+# API proxy to avoid CORS issues for Track 2
+[[redirects]]
+  from = "/api/track2/*"
+  to = "https://healthtech-production-4917.up.railway.app/:splat"
+  status = 200
+  force = true
