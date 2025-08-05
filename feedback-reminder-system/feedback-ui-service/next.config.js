@@ -18,12 +18,6 @@ const nextConfig = {
   },
   // Fix hydration issues
   reactStrictMode: false,
-  // Disable SWC minification to avoid React error #418
-  swcMinify: false,
-  // Experimental features to fix hydration
-  experimental: {
-    esmExternals: false,
-  },
 }
 
 module.exports = nextConfig
