@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Navigation from '@/components/Navigation'
+import { AuthProvider } from '@/components/auth/AuthProvider'
 
 export const metadata: Metadata = {
   title: 'Blood Bank Dashboard - Douala General Hospital',
@@ -16,12 +17,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <div className="min-h-screen bg-gray-50">
-          <Navigation />
-          <main className="pt-16">
-            {children}
-          </main>
-        </div>
+        <AuthProvider>
+          <div className="min-h-screen bg-gray-50">
+            <Navigation />
+            <main className="pt-16">
+              {children}
+            </main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   )

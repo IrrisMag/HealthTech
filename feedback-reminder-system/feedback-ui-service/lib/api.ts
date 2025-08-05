@@ -3,6 +3,7 @@ const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL;
 const FEEDBACK_API_URL = process.env.NEXT_PUBLIC_FEEDBACK_API_URL;
 const REMINDER_API_URL = process.env.NEXT_PUBLIC_REMINDER_API_URL;
 const NOTIFICATION_API_URL = process.env.NEXT_PUBLIC_NOTIFICATION_API_URL;
+const TRACK1_API_URL = process.env.NEXT_PUBLIC_TRACK1_API_URL || 'http://localhost:8000';
 const TRANSLATION_API_URL = process.env.NEXT_PUBLIC_TRANSLATION_API_URL;
 
 // Track 1 and Track 2 API URLs
@@ -42,13 +43,30 @@ export async function submitFeedback(feedbackData: any, token?: string) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${FEEDBACK_API_URL}/api/feedback/submit`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(feedbackData)
-  });
-  if (!res.ok) throw new Error('Erreur lors de la soumission du feedback');
-  return res.json();
+  // Try both endpoints for compatibility
+  const endpoints = [
+    `${FEEDBACK_API_URL}/api/feedback/submit`,
+    `${FEEDBACK_API_URL}/feedback`,
+    `${TRACK1_API_URL}/api/feedback/submit`,
+    `${TRACK1_API_URL}/feedback`
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(feedbackData)
+      });
+      if (res.ok) {
+        return res.json();
+      }
+    } catch (error) {
+      console.warn(`Failed to submit to ${endpoint}:`, error);
+    }
+  }
+
+  throw new Error('Erreur lors de la soumission du feedback - tous les endpoints ont échoué');
 }
 
 export async function login(email: string, password: string) {

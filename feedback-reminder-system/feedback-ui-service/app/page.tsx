@@ -1,7 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function Home() {
+  const { user, canAccessFeature } = useAuth();
+
+  if (!user) {
+    return null; // AuthProvider will handle redirect to login
+  }
   return (
     <div className="font-sans min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <div className="container mx-auto px-4 py-16">
@@ -12,27 +20,58 @@ export default function Home() {
           <p className="text-xl text-gray-600 mb-8">
             Douala General Hospital - Patient Feedback & Management System
           </p>
+          <p className="text-lg text-blue-600 mb-8">
+            Welcome, {user.full_name} ({user.role.charAt(0).toUpperCase() + user.role.slice(1)})
+          </p>
+
           <div className="flex justify-center gap-4 flex-wrap">
-            <Link href="/feedback">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                📝 Submit Feedback
-              </Button>
-            </Link>
-            <Link href="/reminders">
-              <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
-                📅 Schedule Reminders
-              </Button>
-            </Link>
-            <Link href="/chatbot">
-              <Button size="lg" className="bg-green-600 hover:bg-green-700">
-                🤖 Health Assistant
-              </Button>
-            </Link>
-            <Link href="/analytics">
-              <Button variant="outline" size="lg">
-                📊 View Analytics
-              </Button>
-            </Link>
+            {canAccessFeature('feedback') && (
+              <Link href="/feedback">
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                  📝 Submit Feedback
+                </Button>
+              </Link>
+            )}
+
+            {canAccessFeature('reminders') && (
+              <Link href="/reminders">
+                <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+                  📅 Schedule Reminders
+                </Button>
+              </Link>
+            )}
+
+            {canAccessFeature('chatbot') && (
+              <Link href="/chatbot">
+                <Button size="lg" className="bg-green-600 hover:bg-green-700">
+                  🤖 Health Assistant
+                </Button>
+              </Link>
+            )}
+
+            {canAccessFeature('analytics') && (
+              <Link href="/analytics">
+                <Button variant="outline" size="lg">
+                  📊 View Analytics
+                </Button>
+              </Link>
+            )}
+
+            {canAccessFeature('user-registration') && (
+              <Link href="/register">
+                <Button size="lg" className="bg-purple-600 hover:bg-purple-700">
+                  👥 Register Staff
+                </Button>
+              </Link>
+            )}
+
+            {canAccessFeature('patient-registration') && (
+              <Link href="/register-patient">
+                <Button size="lg" className="bg-teal-600 hover:bg-teal-700">
+                  🏥 Register Patient
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 

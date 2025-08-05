@@ -49,98 +49,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY chatbot/ ./chatbot/
 COPY shared/ ./shared/
 
+# Copy the unified backend
+COPY track2_unified_backend.py ./main_railway.py
+
 # Copy built frontend
 COPY --from=frontend-builder /app/frontend/.next ./static/
 COPY --from=frontend-builder /app/frontend/public ./static/public/
-
-# Create unified application for Track 2
-RUN echo 'from fastapi import FastAPI, Request\n\
-from fastapi.staticfiles import StaticFiles\n\
-from fastapi.responses import FileResponse\n\
-from fastapi.middleware.cors import CORSMiddleware\n\
-import uvicorn\n\
-import os\n\
-\n\
-# Import chatbot app\n\
-from chatbot.main import app as chatbot_app\n\
-\n\
-# Create main app\n\
-app = FastAPI(\n\
-    title="HealthTech Track 2 - AI Medical Assistant",\n\
-    description="AI-powered medical chatbot with DT_explanation system",\n\
-    version="2.0.0"\n\
-)\n\
-\n\
-# Add CORS middleware\n\
-app.add_middleware(\n\
-    CORSMiddleware,\n\
-    allow_origins=["*"],\n\
-    allow_credentials=True,\n\
-    allow_methods=["*"],\n\
-    allow_headers=["*"],\n\
-)\n\
-\n\
-# Mount chatbot API\n\
-app.mount("/api/chatbot", chatbot_app)\n\
-\n\
-# Mount static files\n\
-app.mount("/static", StaticFiles(directory="static"), name="static")\n\
-\n\
-# Health check\n\
-@app.get("/health")\n\
-async def health_check():\n\
-    return {\n\
-        "status": "healthy",\n\
-        "service": "AI Medical Assistant",\n\
-        "features": [\n\
-            "DT_explanation System",\n\
-            "RAG Document Processing", \n\
-            "Google Gemini AI",\n\
-            "Medical Knowledge Base"\n\
-        ],\n\
-        "version": "2.0.0"\n\
-    }\n\
-\n\
-# API info\n\
-@app.get("/api")\n\
-async def api_info():\n\
-    return {\n\
-        "chatbot_endpoint": "/api/chatbot/chat",\n\
-        "health_check": "/health",\n\
-        "documentation": "/docs",\n\
-        "features": {\n\
-            "medical_conditions": ["lupus", "diabetes", "hypertension", "malaria"],\n\
-            "medications": ["metformin", "insulin", "antibiotics"],\n\
-            "confidence_scoring": "95% accuracy",\n\
-            "patient_friendly": "Simple explanations and analogies"\n\
-        }\n\
-    }\n\
-\n\
-# Serve frontend\n\
-@app.get("/chatbot")\n\
-async def chatbot_page():\n\
-    return FileResponse("static/chatbot/index.html")\n\
-\n\
-@app.get("/{full_path:path}")\n\
-async def serve_frontend(full_path: str):\n\
-    if full_path.startswith("api/"):\n\
-        return {"error": "API endpoint not found"}\n\
-    \n\
-    # Serve index.html for all non-API routes\n\
-    return FileResponse("static/index.html")\n\
-\n\
-@app.get("/")\n\
-async def root():\n\
-    return {\n\
-        "message": "HealthTech Track 2 - AI Medical Assistant",\n\
-        "chatbot_web": "/chatbot",\n\
-        "api_docs": "/docs",\n\
-        "health": "/health"\n\
-    }\n\
-\n\
-if __name__ == "__main__":\n\
-    port = int(os.environ.get("PORT", 8000))\n\
-    uvicorn.run(app, host="0.0.0.0", port=port)' > main_railway.py
 
 EXPOSE $PORT
 

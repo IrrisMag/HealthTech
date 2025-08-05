@@ -86,7 +86,7 @@ fi
 cat > railway.toml << EOF
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "../../Dockerfile.track3"
 
 [deploy]
 numReplicas = 1

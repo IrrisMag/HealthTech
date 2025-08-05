@@ -9,13 +9,26 @@ class UserCreate(BaseModel):
     password: str
     full_name: str
     role: UserRole
+    phone_number: str  # Required for SMS credential delivery
     employee_id: Optional[str] = None
     department: Optional[Department] = None
+    language: Optional[str] = "en"  # Language preference for SMS (en/fr)
 
     @validator('password')
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
+        return v
+
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        # Basic phone number validation for Cameroon
+        import re
+        # Remove spaces, dashes, parentheses
+        clean_phone = re.sub(r'[\s\-\(\)]', '', v)
+        # Check if it's a valid Cameroon number format
+        if not re.match(r'^(\+237|237|0)?[67]\d{8}$', clean_phone):
+            raise ValueError('Invalid phone number format. Use Cameroon format: +237XXXXXXXXX')
         return v
 
     @validator('employee_id')
@@ -30,6 +43,7 @@ class User(BaseModel):
     email: str
     full_name: str
     role: UserRole
+    phone_number: str
     employee_id: Optional[str]
     department: Optional[Department]
     is_active: bool
@@ -38,6 +52,7 @@ class User(BaseModel):
     last_login: Optional[datetime] = None
     approval_status: ApprovalStatus = ApprovalStatus.PENDING
     mfa_enabled: bool = False
+    language: Optional[str] = "en"
 
 
 class UserUpdate(BaseModel):

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MicVocal, Send, Trash2, Bot, User } from "lucide-react";
+import { sendChatMessage } from "@/lib/chatbot-api";
 
 interface Message {
   id: string;
@@ -55,30 +56,19 @@ const ChatbotPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_TRACK2_API_URL || 'https://healthtech-production-e602.up.railway.app'}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: messageText,
-          session_id: sessionId,
-        }),
+      // Use the chatbot API function for better error handling
+      const response = await sendChatMessage({
+        message: messageText,
+        session_id: sessionId,
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: data.response || "I'm sorry, I couldn't process your request right now. Please try again.",
+        text: response.response || "I'm sorry, I couldn't process your request right now. Please try again.",
         isUser: false,
         timestamp: new Date(),
-        sources: data.sources,
-        confidence: data.confidence_score,
+        sources: response.sources,
+        confidence: response.confidence_score,
       };
 
       setMessages(prev => [...prev, botMessage]);

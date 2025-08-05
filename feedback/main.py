@@ -353,6 +353,7 @@ async def root():
 
 
 @app.post("/feedback", response_model=FeedbackResponse)
+@app.post("/api/feedback/submit", response_model=FeedbackResponse)  # Frontend compatibility
 async def submit_feedback(feedback: FeedbackInput):
     """Submit new patient feedback"""
     try:

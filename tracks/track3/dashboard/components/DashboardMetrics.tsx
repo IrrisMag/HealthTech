@@ -12,7 +12,7 @@ import {
 import { DashboardData } from '@/types'
 
 interface DashboardMetricsProps {
-  data: DashboardData | null
+  data: (DashboardData & { trends?: any }) | null
 }
 
 export default function DashboardMetrics({ data }: DashboardMetricsProps) {

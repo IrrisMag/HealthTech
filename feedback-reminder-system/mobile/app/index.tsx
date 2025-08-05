@@ -1,16 +1,67 @@
-import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-import { Link } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Link, useRouter } from "expo-router";
+import { AuthService, User } from "../lib/auth";
 
 const HomeScreen = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    checkAuthentication();
+  }, []);
+
+  const checkAuthentication = async () => {
+    try {
+      const isAuth = await AuthService.isAuthenticated();
+      if (!isAuth) {
+        router.replace('/auth');
+        return;
+      }
+
+      const currentUser = await AuthService.getCurrentUser();
+      setUser(currentUser);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      router.replace('/auth');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+      router.replace('/auth');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 to-white">
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text className="mt-4 text-gray-600">Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to auth
+  }
   return (
     <View className="flex-1 bg-gradient-to-br from-blue-50 to-white justify-center px-6">
       <View className="items-center mb-16">
         <Text className="text-4xl font-bold text-gray-900 mb-4 text-center">
           HealthTech Platform
         </Text>
-        <Text className="text-xl text-gray-600 mb-8 text-center">
+        <Text className="text-xl text-gray-600 mb-4 text-center">
           Douala General Hospital - Patient Feedback System
+        </Text>
+        <Text className="text-lg text-blue-600 mb-8 text-center">
+          Welcome, {user.full_name}!
         </Text>
         
         <View className="gap-4 w-full max-w-sm">
@@ -33,6 +84,15 @@ const HomeScreen = () => {
           <TouchableOpacity className="border border-blue-600 px-8 py-4 rounded-lg">
             <Text className="text-blue-600 text-lg font-semibold text-center">
               📊 View My Feedback
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="border border-red-600 px-8 py-4 rounded-lg"
+            onPress={handleLogout}
+          >
+            <Text className="text-red-600 text-lg font-semibold text-center">
+              🚪 Sign Out
             </Text>
           </TouchableOpacity>
         </View>

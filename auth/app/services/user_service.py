@@ -1,6 +1,8 @@
 from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
+import secrets
+import string
 from app.models.user import UserInDB, ApprovalStatus, Permission
 from app.models.audit import AuditAction, AuditSeverity
 from app.schemas.user import User, UserCreate
@@ -8,6 +10,7 @@ from app.database.connection import db
 from app.security.password import get_password_hash
 from app.services.security_service import security_service
 from app.services.audit_service import audit_service
+from app.services.notification_service import notification_service
 
 users_collection = db["users"]
 
@@ -41,8 +44,15 @@ def get_user_by_id(user_id: str) -> Optional[UserInDB]:
     return None
 
 
+def generate_temporary_password(length: int = 12) -> str:
+    """Generate a secure temporary password"""
+    # Use a mix of letters, digits, and safe special characters
+    characters = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(characters) for _ in range(length))
+
+
 async def create_user(user: UserCreate, created_by: Optional[str] = None) -> str:
-    """Create new user with audit logging"""
+    """Create new user with SMS credential delivery"""
 
     # Validate password strength
     if not security_service.validate_password_strength(user.password):
@@ -52,7 +62,12 @@ async def create_user(user: UserCreate, created_by: Optional[str] = None) -> str
     if user.employee_id and not security_service.validate_employee_id(user.employee_id, user.role):
         raise ValueError("Invalid employee ID format for role")
 
-    hashed_password = get_password_hash(user.password)
+    # Generate temporary password for SMS delivery
+    temporary_password = generate_temporary_password()
+    hashed_password = get_password_hash(temporary_password)
+
+    # Format phone number
+    formatted_phone = notification_service.format_phone_number(user.phone_number)
 
     # Get default permissions for role
     default_permissions = security_service.get_role_permissions(user.role)
@@ -62,6 +77,7 @@ async def create_user(user: UserCreate, created_by: Optional[str] = None) -> str
         "hashed_password": hashed_password,
         "full_name": user.full_name,
         "role": user.role.value,
+        "phone_number": formatted_phone,
         "employee_id": user.employee_id,
         "department": user.department.value if user.department else None,
         "is_active": True,
@@ -71,7 +87,8 @@ async def create_user(user: UserCreate, created_by: Optional[str] = None) -> str
         "locked_until": None,
         "last_login": None,
         "mfa_enabled": False,
-        "approval_status": ApprovalStatus.PENDING.value
+        "approval_status": ApprovalStatus.PENDING.value,
+        "language": user.language or "en"
     }
 
     result = users_collection.insert_one(user_doc)
@@ -86,6 +103,60 @@ async def create_user(user: UserCreate, created_by: Optional[str] = None) -> str
         severity=AuditSeverity.MEDIUM,
         additional_data={"new_user_email": user.email, "role": user.role.value}
     )
+
+    # Send credentials via SMS
+    try:
+        sms_sent = await notification_service.send_user_credentials(
+            phone_number=formatted_phone,
+            full_name=user.full_name,
+            email=user.email,
+            temporary_password=temporary_password,
+            role=user.role,
+            language=user.language or "en"
+        )
+
+        if sms_sent:
+            await audit_service.log_event(
+                action=AuditAction.USER_CREATED,
+                user_id=created_by,
+                resource="notification",
+                resource_id=user_id,
+                severity=AuditSeverity.LOW,
+                additional_data={
+                    "notification_type": "credentials_sms",
+                    "phone_number": formatted_phone,
+                    "success": True
+                }
+            )
+        else:
+            await audit_service.log_event(
+                action=AuditAction.USER_CREATED,
+                user_id=created_by,
+                resource="notification",
+                resource_id=user_id,
+                severity=AuditSeverity.HIGH,
+                additional_data={
+                    "notification_type": "credentials_sms",
+                    "phone_number": formatted_phone,
+                    "success": False,
+                    "error": "SMS delivery failed"
+                }
+            )
+    except Exception as e:
+        # Log SMS failure but don't fail user creation
+        await audit_service.log_event(
+            action=AuditAction.USER_CREATED,
+            user_id=created_by,
+            resource="notification",
+            resource_id=user_id,
+            severity=AuditSeverity.HIGH,
+            additional_data={
+                "notification_type": "credentials_sms",
+                "phone_number": formatted_phone,
+                "success": False,
+                "error": str(e)
+            }
+        )
 
     return user_id
 

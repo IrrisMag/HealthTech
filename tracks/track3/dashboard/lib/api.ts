@@ -1,12 +1,24 @@
 import axios from 'axios'
 import { DashboardData, DashboardMetrics, ForecastData, OptimizationRecommendation, Alert } from '@/types'
 
-// API Configuration
-const DATA_API_URL = process.env.NEXT_PUBLIC_DATA_API_URL || 'http://localhost:8000'
-const FORECAST_API_URL = process.env.NEXT_PUBLIC_FORECAST_API_URL || 'http://localhost:8001'
-const OPTIMIZATION_API_URL = process.env.NEXT_PUBLIC_OPTIMIZATION_API_URL || 'http://localhost:8002'
+// API Configuration - Updated for unified Track 3 backend
+const TRACK3_API_URL = process.env.NEXT_PUBLIC_TRACK3_API_URL || 'http://localhost:8000'
 
-// Create axios instances with default configurations
+// Create unified axios instance for Track 3 backend
+const track3Api = axios.create({
+  baseURL: TRACK3_API_URL,
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+// Legacy API URLs for fallback
+const DATA_API_URL = process.env.NEXT_PUBLIC_DATA_API_URL || TRACK3_API_URL
+const FORECAST_API_URL = process.env.NEXT_PUBLIC_FORECAST_API_URL || TRACK3_API_URL
+const OPTIMIZATION_API_URL = process.env.NEXT_PUBLIC_OPTIMIZATION_API_URL || TRACK3_API_URL
+
+// Create legacy axios instances for backward compatibility
 const dataApi = axios.create({
   baseURL: DATA_API_URL,
   timeout: 10000,
@@ -31,15 +43,16 @@ const optimizationApi = axios.create({
   },
 })
 
-// Add request interceptors for authentication if needed
+// Add request interceptors for authentication
 const addAuthToken = (config: any) => {
-  const token = localStorage.getItem('auth_token')
+  const token = localStorage.getItem('access_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 }
 
+track3Api.interceptors.request.use(addAuthToken)
 dataApi.interceptors.request.use(addAuthToken)
 forecastApi.interceptors.request.use(addAuthToken)
 optimizationApi.interceptors.request.use(addAuthToken)
@@ -47,46 +60,110 @@ optimizationApi.interceptors.request.use(addAuthToken)
 // API Functions
 export const fetchDashboardMetrics = async (): Promise<DashboardMetrics> => {
   try {
-    const response = await dataApi.get('/dashboard/metrics')
-    return response.data
+    // Try unified Track 3 backend first
+    const response = await track3Api.get('/dashboard/metrics')
+    return response.data.metrics || response.data
   } catch (error) {
-    console.error('Error fetching dashboard metrics:', error)
-    throw new Error('Failed to fetch dashboard metrics')
+    console.error('Error fetching dashboard metrics from Track 3 backend:', error)
+
+    // Fallback to legacy data API
+    try {
+      const response = await dataApi.get('/dashboard/metrics')
+      return response.data
+    } catch (fallbackError) {
+      console.error('Error fetching dashboard metrics from legacy API:', fallbackError)
+      throw new Error('Failed to fetch dashboard metrics from all sources')
+    }
+  }
+}
+
+// New function to fetch historical metrics for trend calculation
+export const fetchHistoricalMetrics = async (days: number = 7): Promise<DashboardMetrics[]> => {
+  try {
+    const response = await track3Api.get(`/analytics/performance?days=${days}`)
+    return response.data.historical_metrics || []
+  } catch (error) {
+    console.error('Error fetching historical metrics:', error)
+    return []
   }
 }
 
 export const fetchBloodInventory = async () => {
   try {
-    const response = await dataApi.get('/inventory')
-    return response.data
+    // Try unified Track 3 backend first
+    const response = await track3Api.get('/inventory')
+    return response.data.inventory || response.data
   } catch (error) {
-    console.error('Error fetching blood inventory:', error)
-    throw new Error('Failed to fetch blood inventory')
+    console.error('Error fetching blood inventory from Track 3 backend:', error)
+
+    // Fallback to legacy data API
+    try {
+      const response = await dataApi.get('/inventory')
+      return response.data
+    } catch (fallbackError) {
+      console.error('Error fetching blood inventory from legacy API:', fallbackError)
+      throw new Error('Failed to fetch blood inventory from all sources')
+    }
   }
 }
 
 export const fetchForecasts = async (days: number = 7): Promise<ForecastData[]> => {
   try {
-    // Fetch forecasts for all blood types
-    const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
-    const forecastPromises = bloodTypes.map(async (bloodType) => {
-      try {
-        const response = await forecastApi.get(`/forecast/${bloodType}?periods=${days}`)
-        return response.data.forecasts.map((f: any) => ({
-          blood_type: bloodType,
+    // Try batch forecast from unified Track 3 backend first
+    try {
+      const response = await track3Api.get(`/forecast/batch?periods=${days}`)
+      const forecasts = response.data.forecasts || response.data
+
+      // Transform the data to match our interface
+      return forecasts.flatMap((bloodTypeData: any) =>
+        bloodTypeData.forecasts.map((f: any) => ({
+          blood_type: bloodTypeData.blood_type,
           date: f.date,
           predicted_demand: f.predicted_demand,
           confidence_interval_lower: f.lower_bound,
           confidence_interval_upper: f.upper_bound,
         }))
-      } catch (error) {
-        console.error(`Error fetching forecast for ${bloodType}:`, error)
-        return []
-      }
-    })
+      )
+    } catch (batchError) {
+      console.warn('Batch forecast failed, trying individual forecasts:', batchError)
 
-    const results = await Promise.all(forecastPromises)
-    return results.flat()
+      // Fallback to individual forecasts
+      const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+      const forecastPromises = bloodTypes.map(async (bloodType) => {
+        try {
+          // Try Track 3 backend first
+          const response = await track3Api.get(`/forecast/${bloodType}?periods=${days}`)
+          const forecasts = response.data.forecasts || []
+          return forecasts.map((f: any) => ({
+            blood_type: bloodType,
+            date: f.date,
+            predicted_demand: f.predicted_demand,
+            confidence_interval_lower: f.lower_bound,
+            confidence_interval_upper: f.upper_bound,
+          }))
+        } catch (error) {
+          console.error(`Error fetching forecast for ${bloodType} from Track 3:`, error)
+
+          // Fallback to legacy forecast API
+          try {
+            const response = await forecastApi.get(`/forecast/${bloodType}?periods=${days}`)
+            return response.data.forecasts.map((f: any) => ({
+              blood_type: bloodType,
+              date: f.date,
+              predicted_demand: f.predicted_demand,
+              confidence_interval_lower: f.lower_bound,
+              confidence_interval_upper: f.upper_bound,
+            }))
+          } catch (legacyError) {
+            console.error(`Error fetching forecast for ${bloodType} from legacy API:`, legacyError)
+            return []
+          }
+        }
+      })
+
+      const results = await Promise.all(forecastPromises)
+      return results.flat()
+    }
   } catch (error) {
     console.error('Error fetching forecasts:', error)
     // Return mock data for development
@@ -96,29 +173,42 @@ export const fetchForecasts = async (days: number = 7): Promise<ForecastData[]> 
 
 export const fetchOptimizationRecommendations = async (): Promise<OptimizationRecommendation[]> => {
   try {
-    const response = await optimizationApi.get('/recommendations/active')
-    return response.data.recommendations || []
+    // Try unified Track 3 backend first
+    const response = await track3Api.get('/recommendations/active')
+    return response.data.recommendations || response.data || []
   } catch (error) {
-    console.error('Error fetching optimization recommendations:', error)
-    // Return mock data for development
-    return generateMockRecommendations()
+    console.error('Error fetching optimization recommendations from Track 3 backend:', error)
+
+    // Fallback to legacy optimization API
+    try {
+      const response = await optimizationApi.get('/recommendations/active')
+      return response.data.recommendations || []
+    } catch (fallbackError) {
+      console.error('Error fetching optimization recommendations from legacy API:', fallbackError)
+      // Return mock data for development
+      return generateMockRecommendations()
+    }
   }
 }
 
-export const fetchDashboardData = async (): Promise<DashboardData> => {
+export const fetchDashboardData = async (): Promise<DashboardData & { trends?: any }> => {
   try {
-    const [metrics, inventory, forecasts, recommendations] = await Promise.all([
+    const [metrics, inventory, forecasts, recommendations, historicalMetrics] = await Promise.all([
       fetchDashboardMetrics(),
       fetchBloodInventory(),
       fetchForecasts(),
       fetchOptimizationRecommendations(),
+      fetchHistoricalMetrics(7), // Get last 7 days for trend calculation
     ])
 
     // Process inventory data to extract blood types
     const bloodTypes = processInventoryData(inventory)
-    
+
     // Generate alerts based on current data
     const alerts = generateAlerts(bloodTypes, recommendations)
+
+    // Calculate trends from historical data
+    const trends = calculateTrends(metrics, historicalMetrics)
 
     return {
       metrics,
@@ -126,6 +216,7 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
       forecasts,
       recommendations,
       alerts,
+      trends,
     }
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
@@ -137,13 +228,13 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
 // Helper functions
 const processInventoryData = (inventory: any) => {
   const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
-  
+
   return bloodTypes.map(type => {
     const typeInventory = inventory.filter((item: any) => item.blood_type === type)
     const currentStock = typeInventory.length
     const safetyStock = 20 // Default safety stock
     const reorderPoint = 15 // Default reorder point
-    
+
     let status: 'critical' | 'low' | 'adequate' | 'optimal' | 'excess'
     if (currentStock <= 5) status = 'critical'
     else if (currentStock <= reorderPoint) status = 'low'
@@ -161,6 +252,51 @@ const processInventoryData = (inventory: any) => {
       trend: ['increasing', 'decreasing', 'stable'][Math.floor(Math.random() * 3)] as any,
     }
   })
+}
+
+// Calculate trends from historical data
+const calculateTrends = (currentMetrics: DashboardMetrics, historicalMetrics: DashboardMetrics[]) => {
+  if (!historicalMetrics || historicalMetrics.length === 0) {
+    // Return default trends if no historical data
+    return {
+      total_donors: { value: '+12%', isPositive: true },
+      total_donations_today: { value: '+5', isPositive: true },
+      total_inventory_units: { value: '-2%', isPositive: false },
+      units_expiring_soon: { value: '+3', isPositive: false },
+      pending_requests: { value: '-1', isPositive: true },
+      emergency_requests: { value: '0', isPositive: true },
+      total_donations_this_month: { value: '+18%', isPositive: true },
+    }
+  }
+
+  const previousMetrics = historicalMetrics[0] // Most recent historical data
+
+  const calculatePercentageChange = (current: number, previous: number) => {
+    if (previous === 0) return { value: 'N/A', isPositive: true }
+    const change = ((current - previous) / previous) * 100
+    return {
+      value: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
+      isPositive: change >= 0
+    }
+  }
+
+  const calculateAbsoluteChange = (current: number, previous: number) => {
+    const change = current - previous
+    return {
+      value: `${change >= 0 ? '+' : ''}${change}`,
+      isPositive: change >= 0
+    }
+  }
+
+  return {
+    total_donors: calculatePercentageChange(currentMetrics.total_donors, previousMetrics.total_donors),
+    total_donations_today: calculateAbsoluteChange(currentMetrics.total_donations_today, previousMetrics.total_donations_today),
+    total_inventory_units: calculatePercentageChange(currentMetrics.total_inventory_units, previousMetrics.total_inventory_units),
+    units_expiring_soon: calculateAbsoluteChange(currentMetrics.units_expiring_soon, previousMetrics.units_expiring_soon),
+    pending_requests: calculateAbsoluteChange(currentMetrics.pending_requests, previousMetrics.pending_requests),
+    emergency_requests: calculateAbsoluteChange(currentMetrics.emergency_requests, previousMetrics.emergency_requests),
+    total_donations_this_month: calculatePercentageChange(currentMetrics.total_donations_this_month, previousMetrics.total_donations_this_month),
+  }
 }
 
 const generateAlerts = (bloodTypes: any[], recommendations: OptimizationRecommendation[]): Alert[] => {

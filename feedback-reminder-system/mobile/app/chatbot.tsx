@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Wave from '../components/wave';
-import { getChatbotAPIURL } from '../utils/config';
+import { sendChatMessage } from '../lib/chatbot-api';
 
 interface Message {
   id: string;
@@ -62,28 +62,19 @@ const ChatbotScreen = () => {
     setIsLoading(true);
 
     try {
-      // Use automatic IP detection for chatbot API URL
-      const apiUrl = getChatbotAPIURL();
-      const response = await fetch(`${apiUrl}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: inputText.trim(),
-          session_id: 'mobile_user_' + Date.now(),
-        }),
+      // Use the chatbot API function for better error handling
+      const response = await sendChatMessage({
+        message: userMessage.text,
+        session_id: 'mobile_user_' + Date.now(),
       });
 
-      const data = await response.json();
-      
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: data.response || "I'm sorry, I couldn't process your request right now. Please try again.",
+        text: response.response || "I'm sorry, I couldn't process your request right now. Please try again.",
         isUser: false,
         timestamp: new Date(),
-        sources: data.sources,
-        confidence: data.confidence_score,
+        sources: response.sources,
+        confidence: response.confidence_score,
       };
 
       setMessages(prev => [...prev, botMessage]);

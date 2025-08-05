@@ -10,11 +10,19 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import asyncio
 
-from fastapi import FastAPI, HTTPException, Query, Body
+from fastapi import FastAPI, HTTPException, Query, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import uvicorn
+
+# Import authentication dependencies
+from auth_deps import (
+    User, get_current_user, require_blood_bank_access,
+    require_inventory_management, require_forecasting_access,
+    require_optimization_access, require_reports_access,
+    get_current_user_optional
+)
 
 # Data science imports
 import pandas as pd
@@ -440,7 +448,7 @@ async def root():
 # =============================================================================
 
 @app.get("/dashboard/metrics")
-async def get_dashboard_metrics():
+async def get_dashboard_metrics(current_user: User = Depends(require_blood_bank_access())):
     """Get dashboard metrics for blood bank overview"""
     try:
         # Generate realistic metrics
@@ -487,7 +495,7 @@ async def get_dashboard_metrics():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/inventory")
-async def get_blood_inventory():
+async def get_blood_inventory(current_user: User = Depends(require_blood_bank_access())):
     """Get current blood inventory"""
     try:
         inventory = await generate_mock_inventory_data()
@@ -529,7 +537,7 @@ async def get_blood_inventory():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/inventory")
-async def add_inventory_item(item: BloodInventoryItem):
+async def add_inventory_item(item: BloodInventoryItem, current_user: User = Depends(require_inventory_management())):
     """Add new blood inventory item"""
     try:
         # In a real implementation, this would save to database
@@ -942,7 +950,8 @@ def generate_arima_forecast(blood_type: str, periods: int = 7) -> List[Dict]:
 @app.get("/forecast/{blood_type}")
 async def get_blood_forecast(
     blood_type: BloodType,
-    periods: int = Query(default=7, ge=1, le=30, description="Number of days to forecast")
+    periods: int = Query(default=7, ge=1, le=30, description="Number of days to forecast"),
+    current_user: User = Depends(require_forecasting_access())
 ):
     """Get demand forecast for specific blood type"""
     try:
@@ -967,7 +976,8 @@ async def get_blood_forecast(
 
 @app.get("/forecast/batch")
 async def get_batch_forecast(
-    periods: int = Query(default=7, ge=1, le=30, description="Number of days to forecast")
+    periods: int = Query(default=7, ge=1, le=30, description="Number of days to forecast"),
+    current_user: User = Depends(require_forecasting_access())
 ):
     """Get demand forecast for all blood types"""
     try:
@@ -1239,7 +1249,7 @@ def generate_optimization_recommendations() -> List[Dict]:
         return []
 
 @app.get("/recommendations/active")
-async def get_active_recommendations():
+async def get_active_recommendations(current_user: User = Depends(require_optimization_access())):
     """Get active optimization recommendations"""
     try:
         recommendations = generate_optimization_recommendations()
@@ -1268,7 +1278,7 @@ async def get_active_recommendations():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/optimize")
-async def run_optimization():
+async def run_optimization(current_user: User = Depends(require_optimization_access())):
     """Run full inventory optimization"""
     try:
         # This would typically run complex optimization algorithms
