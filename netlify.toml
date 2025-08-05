@@ -1,21 +1,36 @@
 # example netlify.toml
 [build]
   command = "npm run build"
-  functions = "netlify/functions"
   publish = "out"
 
-  ## Uncomment to use this redirect for Single Page Applications like create-react-app.
-  ## Not needed for static site generators.
-  #[[redirects]]
-  #  from = "/*"
-  #  to = "/index.html"
-  #  status = 200
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--production=false"
 
-  ## (optional) Settings for Netlify Dev
-  ## https://github.com/netlify/cli/blob/main/docs/netlify-dev.md#project-detection
-  #[dev]
-  #  command = "yarn start" # Command to start your dev server
-  #  port = 3000 # Port that the dev server will be listening on
-  #  publish = "dist" # Folder with the static content for _redirect file
+# Production environment variables
+[context.production.environment]
+  NEXT_PUBLIC_TRACK1_API_URL = "https://track1-production.up.railway.app"
+  NEXT_PUBLIC_TRACK2_API_URL = "https://healthtech-production-4917.up.railway.app"
+  NEXT_PUBLIC_AUTH_API_URL = "https://track1-production.up.railway.app"
+  NEXT_PUBLIC_FEEDBACK_API_URL = "https://track1-production.up.railway.app"
+  NEXT_PUBLIC_REMINDER_API_URL = "https://track1-production.up.railway.app"
+  NEXT_PUBLIC_NOTIFICATION_API_URL = "https://track1-production.up.railway.app"
+  NEXT_PUBLIC_TRANSLATION_API_URL = "https://track1-production.up.railway.app"
+  NEXT_PUBLIC_CHATBOT_API_URL = "https://healthtech-production-4917.up.railway.app"
+  NEXT_PUBLIC_APP_NAME = "HealthTech Platform"
+  NEXT_PUBLIC_APP_VERSION = "1.0.0"
+  NEXT_PUBLIC_ENVIRONMENT = "production"
 
-  ## more info on configuring this file: https://ntl.fyi/file-based-build-config
+# Headers for CORS
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Redirects for SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

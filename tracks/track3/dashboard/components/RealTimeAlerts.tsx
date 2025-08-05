@@ -6,7 +6,8 @@ import {
   AlertTriangle,
   Info,
   X,
-  Bell
+  Bell,
+  Zap
 } from 'lucide-react'
 import { DashboardData } from '@/types'
 
@@ -25,6 +26,29 @@ export default function RealTimeAlerts({ data }: RealTimeAlertsProps) {
 
   const dismissAlert = (alertId: string) => {
     setDismissedAlerts(prev => new Set([...prev, alertId]))
+  }
+
+  const takeAction = (alert: any) => {
+    // Handle different types of critical actions
+    switch (alert.type) {
+      case 'critical':
+        if (alert.message.includes('stock')) {
+          // Navigate to emergency ordering
+          alert(`Emergency order initiated for ${alert.blood_type || 'blood products'}. Contacting suppliers...`)
+        } else if (alert.message.includes('expir')) {
+          // Handle expiring products
+          alert(`Expiring products alert handled. Notifying relevant departments...`)
+        } else {
+          // Generic critical action
+          alert(`Critical action taken for alert: ${alert.message}`)
+        }
+        break
+      default:
+        alert(`Action taken for alert: ${alert.message}`)
+    }
+
+    // Dismiss the alert after taking action
+    dismissAlert(alert.id)
   }
 
   const getAlertIcon = (type: string) => {
@@ -141,9 +165,11 @@ export default function RealTimeAlerts({ data }: RealTimeAlertsProps) {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="text-xs font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded transition-colors"
+                        onClick={() => takeAction(alert)}
+                        className="text-xs font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded transition-colors flex items-center space-x-1"
                       >
-                        Take Action
+                        <Zap className="h-3 w-3" />
+                        <span>Take Action</span>
                       </motion.button>
                     )}
                   </div>

@@ -65,7 +65,7 @@ export default function AuthScreen() {
       });
       Alert.alert(
         'Registration Successful',
-        'Your account has been created and is pending approval. You will be notified once approved.',
+        'Your account has been created! SMS credentials have been sent to your phone. Please login with your credentials.',
         [{ text: 'OK', onPress: () => setIsLogin(true) }]
       );
     } catch (error) {

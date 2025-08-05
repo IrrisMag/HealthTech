@@ -16,7 +16,22 @@
 | 🩸 **Track 3 API** | **[https://healthtech-production-e602.up.railway.app](https://healthtech-production-e602.up.railway.app)** | 🟢 RUNNING | AI-Enhanced Blood Bank API |
 | 🩸 **Track 3 Dashboard** | **[https://track3-blood-bank-dashboard.netlify.app](https://track3-blood-bank-dashboard.netlify.app)** | 🟢 LIVE | Blood Bank Dashboard |
 
-### 📚 **API Documentation (Live)**
+### � **Authentication & Role-Based Access Control**
+
+| Role | Access Level | Permissions |
+|------|-------------|-------------|
+| **👑 Admin** | Full System Access | User registration, Analytics, System management |
+| **👩‍⚕️ Nurse/Receptionist** | Limited Access | Patient registration, Basic system features |
+| **🏥 Patients** | Restricted Access | Chatbot interaction, Feedback submission only |
+| **🩸 Blood Bank Staff** | Dashboard Access | Track 3 blood bank dashboard (login required) |
+
+### 🔑 **Login Requirements**
+- **All platforms require authentication** before access
+- **Web UI**: Login page before accessing any features
+- **Mobile App**: Login page for patient access
+- **Track 3 Dashboard**: Dedicated login for blood bank staff
+
+### �📚 **API Documentation (Live)**
 - **Track 1 Docs**: [https://track1-production.up.railway.app/docs](https://track1-production.up.railway.app/docs)
 - **Track 2 Docs**: [https://healthtech-production-4917.up.railway.app/docs](https://healthtech-production-4917.up.railway.app/docs)
 - **Track 3 Docs**: [https://healthtech-production-e602.up.railway.app/docs](https://healthtech-production-e602.up.railway.app/docs)

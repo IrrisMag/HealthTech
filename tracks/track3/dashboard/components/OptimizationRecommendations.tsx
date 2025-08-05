@@ -1,20 +1,50 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   AlertTriangle,
   CheckCircle,
   Clock,
   DollarSign,
-  Truck
+  Truck,
+  Eye,
+  Play
 } from 'lucide-react'
 import { DashboardData } from '@/types'
+import { executeOptimizationOrder } from '@/lib/api'
 
 interface OptimizationRecommendationsProps {
   data: DashboardData | null
 }
 
 export default function OptimizationRecommendations({ data }: OptimizationRecommendationsProps) {
+  const [executingOrders, setExecutingOrders] = useState<Set<string>>(new Set())
+  const [selectedRecommendation, setSelectedRecommendation] = useState<any>(null)
+
+  const handleViewDetails = (recommendation: any) => {
+    setSelectedRecommendation(recommendation)
+  }
+
+  const handleExecuteOrder = async (recommendation: any) => {
+    if (executingOrders.has(recommendation.id)) return
+
+    setExecutingOrders(prev => new Set(prev).add(recommendation.id))
+
+    try {
+      await executeOptimizationOrder(recommendation.id)
+      alert(`Order executed successfully for ${recommendation.blood_type} - ${recommendation.action}`)
+    } catch (error) {
+      alert(`Failed to execute order: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setExecutingOrders(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(recommendation.id)
+        return newSet
+      })
+    }
+  }
+
   if (!data) {
     return (
       <div className="card">
@@ -182,15 +212,26 @@ export default function OptimizationRecommendations({ data }: OptimizationRecomm
                     Generated {new Date(rec.created_at).toLocaleString()}
                   </div>
                   <div className="flex space-x-2">
-                    <button className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors">
-                      View Details
+                    <button
+                      onClick={() => handleViewDetails(rec)}
+                      className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors flex items-center space-x-1"
+                    >
+                      <Eye className="h-3 w-3" />
+                      <span>View Details</span>
                     </button>
-                    <button className={`px-3 py-1 text-xs font-medium text-white rounded transition-colors ${
-                      rec.priority_level === 'emergency' || rec.priority_level === 'critical'
-                        ? 'bg-red-600 hover:bg-red-700'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    }`}>
-                      Execute Order
+                    <button
+                      onClick={() => handleExecuteOrder(rec)}
+                      disabled={executingOrders.has(rec.id)}
+                      className={`px-3 py-1 text-xs font-medium text-white rounded transition-colors flex items-center space-x-1 ${
+                        executingOrders.has(rec.id)
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : rec.priority_level === 'emergency' || rec.priority_level === 'critical'
+                            ? 'bg-red-600 hover:bg-red-700'
+                            : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                    >
+                      <Play className="h-3 w-3" />
+                      <span>{executingOrders.has(rec.id) ? 'Executing...' : 'Execute Order'}</span>
                     </button>
                   </div>
                 </div>
@@ -221,6 +262,93 @@ export default function OptimizationRecommendations({ data }: OptimizationRecomm
                 {data.recommendations.reduce((sum, r) => sum + r.recommended_order_quantity, 0)}
               </div>
               <div className="text-sm text-gray-600">Total Units</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {selectedRecommendation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Recommendation Details</h3>
+              <button
+                onClick={() => setSelectedRecommendation(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Blood Type</label>
+                  <p className="text-lg font-semibold">{selectedRecommendation.blood_type}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Priority</label>
+                  <p className={`text-lg font-semibold ${getPriorityColor(selectedRecommendation.priority_level)}`}>
+                    {selectedRecommendation.priority_level.toUpperCase()}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-600">Action Required</label>
+                <p className="text-gray-900">{selectedRecommendation.action}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-600">Reason</label>
+                <p className="text-gray-700">{selectedRecommendation.reason}</p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Recommended Quantity</label>
+                  <p className="text-lg font-semibold">{selectedRecommendation.recommended_order_quantity} units</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Cost Estimate</label>
+                  <p className="text-lg font-semibold">${selectedRecommendation.cost_estimate.toLocaleString()}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Expected Delivery</label>
+                  <p className="text-lg font-semibold">{selectedRecommendation.expected_delivery_time}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-600">Generated</label>
+                <p className="text-gray-700">{new Date(selectedRecommendation.created_at).toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setSelectedRecommendation(null)}
+                className="px-4 py-2 text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  handleExecuteOrder(selectedRecommendation)
+                  setSelectedRecommendation(null)
+                }}
+                disabled={executingOrders.has(selectedRecommendation.id)}
+                className={`px-4 py-2 text-white rounded transition-colors ${
+                  executingOrders.has(selectedRecommendation.id)
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : selectedRecommendation.priority_level === 'emergency' || selectedRecommendation.priority_level === 'critical'
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {executingOrders.has(selectedRecommendation.id) ? 'Executing...' : 'Execute Order'}
+              </button>
             </div>
           </div>
         </div>

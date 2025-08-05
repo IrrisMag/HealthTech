@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthTech Platform</title>
+    <script>
+        // Set API configuration
+        window.NEXT_PUBLIC_TRACK1_API_URL = "https://track1-production.up.railway.app";
+        window.NEXT_PUBLIC_TRACK2_API_URL = "https://healthtech-production-4917.up.railway.app";
+        
+        // Redirect to the main application
+        setTimeout(() => {
+            window.location.href = "https://healthteh.netlify.app";
+        }, 1000);
+    </script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 50px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 10px;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 HealthTech Platform</h1>
+        <p>Douala General Hospital - Digital Healthcare System</p>
+        <div class="spinner"></div>
+        <p>Loading your personalized healthcare dashboard...</p>
+        <p><small>Connecting to Track 1 & Track 2 services...</small></p>
+    </div>
+</body>
+</html>

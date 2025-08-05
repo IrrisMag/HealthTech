@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FileText, Download, Calendar, BarChart3, TrendingUp, Users } from 'lucide-react'
-import { fetchDashboardData } from '@/lib/api'
+import { fetchDashboardData, generateReport as apiGenerateReport } from '@/lib/api'
 import { DashboardData } from '@/types'
 
 export default function ReportsPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState<string>('7days')
+  const [generatingReports, setGeneratingReports] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadData()
@@ -26,10 +27,30 @@ export default function ReportsPage() {
     }
   }
 
-  const generateReport = (type: string) => {
-    // In a real implementation, this would generate and download actual reports
-    console.log(`Generating ${type} report for period: ${selectedPeriod}`)
-    alert(`${type} report generation started. You will be notified when ready.`)
+  const generateReport = async (type: string) => {
+    if (generatingReports.has(type)) return
+
+    setGeneratingReports(prev => new Set(prev).add(type))
+
+    try {
+      const result = await apiGenerateReport(type, { period: selectedPeriod })
+
+      if (result.download_url && result.download_url !== '#report-' + type + '-' + Date.now()) {
+        // Real download URL - open in new tab
+        window.open(result.download_url, '_blank')
+      } else {
+        // Simulated report - show success message
+        alert(`${type} report generated successfully! Report ID: ${result.report_id}`)
+      }
+    } catch (error) {
+      alert(`Failed to generate ${type} report: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setGeneratingReports(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(type)
+        return newSet
+      })
+    }
   }
 
   const reportTypes = [
@@ -177,10 +198,15 @@ export default function ReportsPage() {
               </div>
               <button
                 onClick={() => generateReport(report.title)}
-                className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                disabled={generatingReports.has(report.title)}
+                className={`px-3 py-1 text-white text-sm rounded-lg transition-colors flex items-center space-x-1 ${
+                  generatingReports.has(report.title)
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
               >
                 <Download className="w-4 h-4" />
-                <span>Generate</span>
+                <span>{generatingReports.has(report.title) ? 'Generating...' : 'Generate'}</span>
               </button>
             </div>
             

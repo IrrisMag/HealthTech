@@ -58,40 +58,55 @@ const HomeScreen = () => {
           HealthTech Platform
         </Text>
         <Text className="text-xl text-gray-600 mb-4 text-center">
-          Douala General Hospital - Patient Feedback System
+          Douala General Hospital - Patient Portal
         </Text>
-        <Text className="text-lg text-blue-600 mb-8 text-center">
+        <Text className="text-lg text-blue-600 mb-2 text-center">
           Welcome, {user.full_name}!
+        </Text>
+        <Text className="text-sm text-gray-500 mb-8 text-center">
+          Patient Access - {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
         </Text>
         
         <View className="gap-4 w-full max-w-sm">
-          <Link href="/feedback" asChild>
-            <TouchableOpacity className="bg-blue-600 px-8 py-4 rounded-lg">
-              <Text className="text-white text-lg font-semibold text-center">
-                📝 Submit Feedback
-              </Text>
-            </TouchableOpacity>
-          </Link>
-          
+          {/* AI Health Assistant - Primary feature for patients */}
           <Link href="/chatbot" asChild>
-            <TouchableOpacity className="bg-green-600 px-8 py-4 rounded-lg">
-              <Text className="text-white text-lg font-semibold text-center">
-                🤖 Health Assistant
+            <TouchableOpacity className="bg-green-600 px-8 py-4 rounded-lg shadow-lg">
+              <Text className="text-white text-lg font-semibold text-center mb-1">
+                🤖 AI Health Assistant
+              </Text>
+              <Text className="text-green-100 text-sm text-center">
+                Get instant medical guidance 24/7
               </Text>
             </TouchableOpacity>
           </Link>
-          
-          <TouchableOpacity className="border border-blue-600 px-8 py-4 rounded-lg">
-            <Text className="text-blue-600 text-lg font-semibold text-center">
-              📊 View My Feedback
+
+          {/* Feedback Submission - Secondary feature for patients */}
+          <Link href="/feedback" asChild>
+            <TouchableOpacity className="bg-blue-600 px-8 py-4 rounded-lg shadow-lg">
+              <Text className="text-white text-lg font-semibold text-center mb-1">
+                💬 Share Your Feedback
+              </Text>
+              <Text className="text-blue-100 text-sm text-center">
+                Help us improve our services
+              </Text>
+            </TouchableOpacity>
+          </Link>
+
+          {/* Patient Access Notice */}
+          <View className="bg-green-50 border border-green-200 px-4 py-3 rounded-lg">
+            <Text className="text-green-800 text-sm text-center font-medium mb-1">
+              ✅ Patient Portal Access
             </Text>
-          </TouchableOpacity>
+            <Text className="text-green-700 text-xs text-center">
+              You have access to AI health assistance and feedback submission
+            </Text>
+          </View>
 
           <TouchableOpacity
-            className="border border-red-600 px-8 py-4 rounded-lg"
+            className="border border-gray-400 px-8 py-2 rounded-lg mt-4"
             onPress={handleLogout}
           >
-            <Text className="text-red-600 text-lg font-semibold text-center">
+            <Text className="text-gray-600 text-sm font-medium text-center">
               🚪 Sign Out
             </Text>
           </TouchableOpacity>
@@ -99,30 +114,30 @@ const HomeScreen = () => {
       </View>
 
       <View className="gap-4">
-        <View className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+        <View className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
           <Text className="text-lg font-semibold mb-2">
-            🧠 AI-Powered Analysis
+            🤖 24/7 AI Health Assistant
           </Text>
-          <Text className="text-gray-600">
-            Your feedback is automatically analyzed for sentiment and priority
+          <Text className="text-gray-600 text-sm">
+            Ask questions about symptoms, medications, and get instant medical guidance
           </Text>
         </View>
-        
-        <View className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+
+        <View className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
           <Text className="text-lg font-semibold mb-2">
-            🤖 AI Health Assistant
+            💬 Your Voice Matters
           </Text>
-          <Text className="text-gray-600">
-            Get instant answers to health questions with our AI chatbot
+          <Text className="text-gray-600 text-sm">
+            Share your experience to help us improve healthcare services
           </Text>
         </View>
-        
-        <View className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
-          <Text className="text-lg font-semibold mb-2">
-            🌍 Multi-Language
+
+        <View className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+          <Text className="text-orange-800 font-semibold mb-2 text-sm">
+            ⚠️ Important Notice
           </Text>
-          <Text className="text-gray-600">
-            Available in English, French, Duala, and Fulfulde
+          <Text className="text-orange-700 text-xs">
+            The AI assistant provides general health information and should not replace professional medical advice. For emergencies, contact emergency services immediately.
           </Text>
         </View>
       </View>
