@@ -35,21 +35,27 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
       if (onLoginSuccess) {
         onLoginSuccess();
       } else {
-        // Redirect based on user role
+        // Redirect based on user role to existing pages
         const userRole = response.user.role;
         switch (userRole) {
           case 'admin':
-            router.push('/admin/dashboard');
+            // Admin gets access to analytics and all features
+            router.push('/analytics');
             break;
+          case 'doctor':
           case 'nurse':
           case 'receptionist':
-            router.push('/staff/dashboard');
+          case 'staff':
+            // Medical staff gets access to feedback and reminders
+            router.push('/feedback');
             break;
           case 'patient':
-            router.push('/patient/dashboard');
+            // Patients get access to chatbot and feedback
+            router.push('/chatbot');
             break;
           default:
-            router.push('/dashboard');
+            // Default to home page with all features
+            router.push('/');
         }
       }
     } catch (err) {
@@ -77,6 +83,18 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
           <CardDescription>
             Sign in to access the hospital management system
           </CardDescription>
+
+          {/* Demo Accounts Information */}
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm">
+            <p className="font-semibold text-blue-800 mb-2">Demo Accounts:</p>
+            <div className="space-y-1 text-blue-700">
+              <p><strong>Admin:</strong> admin@hospital.com / admin123</p>
+              <p><strong>Doctor:</strong> doctor@hospital.com / doctor123</p>
+              <p><strong>Nurse:</strong> nurse@hospital.com / nurse123</p>
+              <p><strong>Patient:</strong> patient@hospital.com / patient123</p>
+              <p><strong>Blood Bank:</strong> bloodbank@hospital.com / blood123</p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
