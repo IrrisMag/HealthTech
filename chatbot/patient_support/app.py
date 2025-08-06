@@ -41,7 +41,11 @@ app = FastAPI(
 )
 
 # Configure CORS for frontend integration
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:19006").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS",
+    "http://localhost:3000,http://localhost:3001,http://localhost:19006,"
+    "https://healthtech-platform-fresh.netlify.app,"
+    "https://healthtech-tracks-1-2.netlify.app"
+).split(",")
 
 app.add_middleware(
     CORSMiddleware,

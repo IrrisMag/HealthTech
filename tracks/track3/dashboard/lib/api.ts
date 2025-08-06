@@ -60,134 +60,165 @@ optimizationApi.interceptors.request.use(addAuthToken)
 // API Functions
 export const fetchDashboardMetrics = async (): Promise<DashboardMetrics> => {
   try {
-    // Try unified Track 3 backend first
     const response = await track3Api.get('/dashboard/metrics')
-    return response.data.metrics || response.data
-  } catch (error) {
-    console.error('Error fetching dashboard metrics from Track 3 backend:', error)
+    const data = response.data
 
-    // Fallback to legacy data API
-    try {
-      const response = await dataApi.get('/dashboard/metrics')
-      return response.data
-    } catch (fallbackError) {
-      console.error('Error fetching dashboard metrics from legacy API:', fallbackError)
-      throw new Error('Failed to fetch dashboard metrics from all sources')
+    if (data.status === 'success' && data.data) {
+      // Transform the backend data to match our DashboardMetrics interface
+      return {
+        total_donors: data.data.total_donors,
+        total_donations_today: data.data.total_donations_today,
+        total_donations_this_month: data.data.total_donations_this_month,
+        total_inventory_units: data.data.total_inventory_units,
+        units_expiring_soon: data.data.units_expiring_soon,
+        pending_requests: data.data.pending_requests,
+        emergency_requests: data.data.emergency_requests,
+        blood_type_distribution: data.data.blood_type_distribution,
+        component_distribution: data.data.component_distribution,
+        last_updated: data.data.last_updated,
+      }
     }
+
+    throw new Error('Invalid response format from dashboard metrics API')
+  } catch (error) {
+    console.error('Error fetching dashboard metrics:', error)
+    throw new Error('Failed to fetch dashboard metrics. Please check if the data service is running.')
   }
 }
 
 // New function to fetch historical metrics for trend calculation
-export const fetchHistoricalMetrics = async (days: number = 7): Promise<DashboardMetrics[]> => {
+export const fetchHistoricalMetrics = async (days: number = 7): Promise<any> => {
   try {
     const response = await track3Api.get(`/analytics/performance?days=${days}`)
-    return response.data.historical_metrics || []
+    const data = response.data
+
+    if (data.status === 'success') {
+      return {
+        performance_metrics: data.performance_metrics,
+        recent_improvements: data.recent_improvements,
+        timestamp: data.timestamp
+      }
+    }
+
+    throw new Error('Invalid response format from analytics API')
   } catch (error) {
     console.error('Error fetching historical metrics:', error)
-    return []
+    throw new Error('Failed to fetch analytics data. Please check if the analytics service is running.')
   }
 }
 
 export const fetchBloodInventory = async () => {
   try {
-    // Try unified Track 3 backend first
     const response = await track3Api.get('/inventory')
-    return response.data.inventory || response.data
-  } catch (error) {
-    console.error('Error fetching blood inventory from Track 3 backend:', error)
+    const data = response.data
 
-    // Fallback to legacy data API
-    try {
-      const response = await dataApi.get('/inventory')
-      return response.data
-    } catch (fallbackError) {
-      console.error('Error fetching blood inventory from legacy API:', fallbackError)
-      throw new Error('Failed to fetch blood inventory from all sources')
+    if (data.status === 'success' && data.inventory) {
+      return data.inventory
     }
+
+    throw new Error('Invalid response format from inventory API')
+  } catch (error) {
+    console.error('Error fetching blood inventory:', error)
+    throw new Error('Failed to fetch blood inventory. Please check if the data service is running.')
   }
 }
 
 export const fetchForecasts = async (days: number = 7): Promise<ForecastData[]> => {
+  const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+
   try {
-    // Try batch forecast from unified Track 3 backend first
+    // Try batch forecast first (more efficient)
     try {
-      const response = await track3Api.get(`/forecast/batch?periods=${days}`)
-      const forecasts = response.data.forecasts || response.data
-
-      // Transform the data to match our interface
-      return forecasts.flatMap((bloodTypeData: any) =>
-        bloodTypeData.forecasts.map((f: any) => ({
-          blood_type: bloodTypeData.blood_type,
-          date: f.date,
-          predicted_demand: f.predicted_demand,
-          confidence_interval_lower: f.lower_bound,
-          confidence_interval_upper: f.upper_bound,
-        }))
-      )
-    } catch (batchError) {
-      console.warn('Batch forecast failed, trying individual forecasts:', batchError)
-
-      // Fallback to individual forecasts
-      const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+      console.log('🔄 Attempting batch forecast...')
+      // Note: The batch endpoint expects individual calls, so we'll use parallel individual calls
+      // This is more efficient than sequential calls
       const forecastPromises = bloodTypes.map(async (bloodType) => {
         try {
-          // Try Track 3 backend first
-          const response = await track3Api.get(`/forecast/${bloodType}?periods=${days}`)
-          const forecasts = response.data.forecasts || []
-          return forecasts.map((f: any) => ({
-            blood_type: bloodType,
-            date: f.date,
-            predicted_demand: f.predicted_demand,
-            confidence_interval_lower: f.lower_bound,
-            confidence_interval_upper: f.upper_bound,
-          }))
-        } catch (error) {
-          console.error(`Error fetching forecast for ${bloodType} from Track 3:`, error)
+          const response = await track3Api.get(`/forecast/${encodeURIComponent(bloodType)}?periods=${days}`)
+          const data = response.data
 
-          // Fallback to legacy forecast API
-          try {
-            const response = await forecastApi.get(`/forecast/${bloodType}?periods=${days}`)
-            return response.data.forecasts.map((f: any) => ({
+          if (data.status === 'success' && data.forecasts) {
+            return data.forecasts.map((f: any) => ({
               blood_type: bloodType,
               date: f.date,
               predicted_demand: f.predicted_demand,
               confidence_interval_lower: f.lower_bound,
               confidence_interval_upper: f.upper_bound,
             }))
-          } catch (legacyError) {
-            console.error(`Error fetching forecast for ${bloodType} from legacy API:`, legacyError)
-            return []
           }
+          return []
+        } catch (error) {
+          console.error(`❌ Error fetching forecast for ${bloodType}:`, error)
+          return []
         }
       })
 
       const results = await Promise.all(forecastPromises)
-      return results.flat()
+      const allForecasts = results.flat()
+
+      if (allForecasts.length === 0) {
+        throw new Error('No forecast data available from any blood type')
+      }
+
+      console.log(`✅ Successfully loaded ${allForecasts.length} forecast records using real ARIMA models`)
+      return allForecasts
+    } catch (batchError) {
+      console.error('❌ Batch forecast failed:', batchError)
+      throw batchError
     }
   } catch (error) {
-    console.error('Error fetching forecasts:', error)
-    // Return mock data for development
-    return generateMockForecasts(days)
+    console.error('❌ Error fetching forecasts:', error)
+    throw new Error('Failed to fetch forecast data. Please check if the forecasting service is running.')
   }
 }
 
 export const fetchOptimizationRecommendations = async (): Promise<OptimizationRecommendation[]> => {
   try {
-    // Try unified Track 3 backend first
     const response = await track3Api.get('/recommendations/active')
-    return response.data.recommendations || response.data || []
-  } catch (error) {
-    console.error('Error fetching optimization recommendations from Track 3 backend:', error)
+    const data = response.data
 
-    // Fallback to legacy optimization API
-    try {
-      const response = await optimizationApi.get('/recommendations/active')
-      return response.data.recommendations || []
-    } catch (fallbackError) {
-      console.error('Error fetching optimization recommendations from legacy API:', fallbackError)
-      // Return mock data for development
-      return generateMockRecommendations()
+    if (data.status === 'success' && data.recommendations) {
+      return data.recommendations
     }
+
+    throw new Error('Invalid response format from recommendations API')
+  } catch (error) {
+    console.error('Error fetching optimization recommendations:', error)
+    throw new Error('Failed to fetch optimization recommendations. Please check if the optimization service is running.')
+  }
+}
+
+// Fetch donors data
+export const fetchDonors = async (): Promise<any[]> => {
+  try {
+    const response = await track3Api.get('/donors')
+    const data = response.data
+
+    if (data.status === 'success' && data.donors) {
+      return data.donors
+    }
+
+    throw new Error('Invalid response format from donors API')
+  } catch (error) {
+    console.error('Error fetching donors:', error)
+    throw new Error('Failed to fetch donors data. Please check if the data service is running.')
+  }
+}
+
+// Trigger real-time optimization
+export const triggerOptimization = async (): Promise<any> => {
+  try {
+    const response = await track3Api.post('/optimize')
+    const data = response.data
+
+    if (data.status === 'success') {
+      return data
+    }
+
+    throw new Error('Invalid response format from optimization API')
+  } catch (error) {
+    console.error('Error triggering optimization:', error)
+    throw new Error('Failed to trigger optimization. Please check if the optimization service is running.')
   }
 }
 
@@ -220,8 +251,7 @@ export const fetchDashboardData = async (): Promise<DashboardData & { trends?: a
     }
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
-    // Return mock data for development
-    return generateMockDashboardData()
+    throw new Error('Failed to fetch dashboard data. Please check if all backend services are running.')
   }
 }
 
@@ -335,73 +365,11 @@ const generateAlerts = (bloodTypes: any[], recommendations: OptimizationRecommen
   return alerts
 }
 
-// Mock data generators for development
-const generateMockForecasts = (days: number): ForecastData[] => {
-  const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
-  const forecasts: ForecastData[] = []
-  
-  bloodTypes.forEach(type => {
-    for (let i = 1; i <= days; i++) {
-      const date = new Date()
-      date.setDate(date.getDate() + i)
-      
-      const baseDemand = Math.random() * 20 + 10
-      forecasts.push({
-        blood_type: type,
-        date: date.toISOString().split('T')[0],
-        predicted_demand: baseDemand,
-        confidence_interval_lower: baseDemand * 0.8,
-        confidence_interval_upper: baseDemand * 1.2,
-      })
-    }
-  })
-  
-  return forecasts
-}
 
-const generateMockRecommendations = (): OptimizationRecommendation[] => {
-  return [
-    {
-      recommendation_id: 'rec-001',
-      blood_type: 'O+',
-      current_stock_level: 'critical',
-      recommendation_type: 'emergency_order',
-      recommended_order_quantity: 50,
-      priority_level: 'emergency',
-      cost_estimate: 6250,
-      expected_delivery_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      reasoning: 'URGENT: Current stock (5) is below safety level (20).',
-      confidence_score: 0.95,
-      created_at: new Date().toISOString(),
-    },
-  ]
-}
 
-const generateMockDashboardData = (): DashboardData => {
-  return {
-    metrics: {
-      total_donors: 1250,
-      total_donations_today: 15,
-      total_donations_this_month: 342,
-      total_inventory_units: 890,
-      units_expiring_soon: 23,
-      pending_requests: 8,
-      emergency_requests: 2,
-      blood_type_distribution: {
-        'O+': 180, 'O-': 45, 'A+': 150, 'A-': 38,
-        'B+': 120, 'B-': 32, 'AB+': 85, 'AB-': 22
-      },
-      component_distribution: {
-        'whole_blood': 450, 'red_cells': 280, 'plasma': 160
-      },
-      last_updated: new Date().toISOString(),
-    },
-    blood_types: processInventoryData([]),
-    forecasts: generateMockForecasts(7),
-    recommendations: generateMockRecommendations(),
-    alerts: [],
-  }
-}
+
+
+
 
 // Execute optimization order
 export const executeOptimizationOrder = async (recommendationId: string): Promise<any> => {
@@ -410,18 +378,7 @@ export const executeOptimizationOrder = async (recommendationId: string): Promis
     return response.data
   } catch (error) {
     console.error('Failed to execute optimization order:', error)
-
-    // Fallback: simulate order execution
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          message: `Order executed successfully for recommendation ${recommendationId}`,
-          order_id: `ORDER_${Date.now()}`,
-          status: 'processing'
-        })
-      }, 2000) // Simulate 2 second processing time
-    })
+    throw new Error('Failed to execute optimization order. Please check if the optimization service is running.')
   }
 }
 
@@ -436,17 +393,6 @@ export const generateReport = async (reportType: string, filters?: any): Promise
     return response.data
   } catch (error) {
     console.error('Failed to generate report:', error)
-
-    // Fallback: simulate report generation
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          report_id: `REPORT_${Date.now()}`,
-          download_url: `#report-${reportType}-${Date.now()}`,
-          message: `${reportType} report generated successfully`
-        })
-      }, 3000) // Simulate 3 second generation time
-    })
+    throw new Error('Failed to generate report. Please check if the reporting service is running.')
   }
 }

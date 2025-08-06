@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AuthService, LoginCredentials } from "@/lib/auth";
+import { LoginCredentials } from "@/lib/auth";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
 
 interface LoginFormProps {
@@ -23,6 +24,7 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,34 +32,12 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
     setError("");
 
     try {
-      const response = await AuthService.login(credentials);
-      
+      await login(credentials.email, credentials.password);
+
       if (onLoginSuccess) {
         onLoginSuccess();
-      } else {
-        // Redirect based on user role to existing pages
-        const userRole = response.user.role;
-        switch (userRole) {
-          case 'admin':
-            // Admin gets access to analytics and all features
-            router.push('/analytics');
-            break;
-          case 'doctor':
-          case 'nurse':
-          case 'receptionist':
-          case 'staff':
-            // Medical staff gets access to feedback and reminders
-            router.push('/feedback');
-            break;
-          case 'patient':
-            // Patients get access to chatbot and feedback
-            router.push('/chatbot');
-            break;
-          default:
-            // Default to home page with all features
-            router.push('/');
-        }
       }
+      // AuthProvider will handle the redirect automatically
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

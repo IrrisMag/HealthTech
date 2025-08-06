@@ -12,7 +12,8 @@ import {
   User,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Users
 } from 'lucide-react'
 import { useAuth } from './auth/AuthProvider'
 
@@ -48,6 +49,9 @@ export default function Navigation() {
     if (canAccessOptimization()) {
       items.push({ name: 'Optimization', href: '/optimization', icon: Settings });
     }
+
+    // Add donors management for all users
+    items.push({ name: 'Donors', href: '/donors', icon: Users });
 
     if (canViewReports()) {
       items.push({ name: 'Reports', href: '/reports', icon: BarChart3 });

@@ -35,11 +35,19 @@ app.add_middleware(
 
 # Import and mount sub-applications
 try:
-    from auth.main import app as auth_app
-    app.mount("/api/auth", auth_app)
-    logger.info("✅ Auth service mounted")
+    # Import auth routers directly instead of mounting the whole app
+    from auth.app.routers.auth import router as auth_router
+    from auth.app.database.init_db import setup_database as setup_auth_db
+
+    # Setup auth database
+    setup_auth_db()
+
+    app.include_router(auth_router, prefix="/api")
+    logger.info("✅ Auth service mounted at /api/auth")
 except ImportError as e:
     logger.warning(f"⚠️ Auth service not available: {e}")
+except Exception as e:
+    logger.warning(f"⚠️ Auth service setup failed: {e}")
 
 try:
     from feedback.main import app as feedback_app

@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AuthService, LoginCredentials } from "@/lib/auth";
+import { LoginCredentials } from "@/lib/auth";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
 
 interface LoginFormProps {
@@ -23,6 +24,7 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,28 +32,12 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
     setError("");
 
     try {
-      const response = await AuthService.login(credentials);
-      
+      await login(credentials.email, credentials.password);
+
       if (onLoginSuccess) {
         onLoginSuccess();
-      } else {
-        // Redirect based on user role
-        const userRole = response.user.role;
-        switch (userRole) {
-          case 'admin':
-            router.push('/admin/dashboard');
-            break;
-          case 'nurse':
-          case 'receptionist':
-            router.push('/staff/dashboard');
-            break;
-          case 'patient':
-            router.push('/patient/dashboard');
-            break;
-          default:
-            router.push('/dashboard');
-        }
       }
+      // AuthProvider will handle the redirect automatically
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

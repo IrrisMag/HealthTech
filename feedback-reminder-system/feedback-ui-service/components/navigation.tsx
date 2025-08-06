@@ -3,22 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Home, MessageSquare, Bot, BarChart3, Calendar, UserPlus, Users, LogOut } from "lucide-react";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { Home, MessageSquare, Bot, BarChart3, Calendar, UserPlus, Users, Heart } from "lucide-react";
 
 const Navigation = () => {
   const pathname = usePathname();
-  const { user, logout, canAccessFeature } = useAuth();
 
-  // Don't show navigation on login page
-  if (pathname === '/login') {
-    return null;
-  }
+  // Mock user - no authentication needed
+  const user = {
+    full_name: "Hospital Staff",
+    role: "admin"
+  };
 
-  // Don't show navigation if not authenticated
-  if (!user) {
-    return null;
-  }
+  const canAccessFeature = (feature: string) => true; // Allow access to all features
 
   const getNavItems = () => {
     const items = [
@@ -89,23 +85,14 @@ const Navigation = () => {
               );
             })}
 
-            {/* User info and logout */}
+            {/* Hospital Info */}
             <div className="ml-4 flex items-center space-x-3 border-l pl-4">
               <div className="text-sm text-gray-700">
-                <span className="font-medium">{user.full_name}</span>
-                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                <span className="font-medium">Douala General Hospital</span>
+                <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                  HealthTech Platform
                 </span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={logout}
-                className="flex items-center"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
             </div>
           </div>
         </div>

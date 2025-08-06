@@ -7,7 +7,7 @@ import BloodInventoryChart from '@/components/BloodInventoryChart'
 import ForecastingChart from '@/components/ForecastingChart'
 import OptimizationRecommendations from '@/components/OptimizationRecommendations'
 import RealTimeAlerts from '@/components/RealTimeAlerts'
-import { fetchDashboardData } from '@/lib/api'
+import { fetchDashboardData, triggerOptimization } from '@/lib/api'
 import { DashboardData } from '@/types'
 import { useAuth } from '@/components/auth/AuthProvider'
 
@@ -21,6 +21,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  const [optimizing, setOptimizing] = useState(false)
+  const [optimizationResult, setOptimizationResult] = useState<any>(null)
 
   useEffect(() => {
     loadDashboardData()
@@ -41,6 +43,30 @@ export default function Dashboard() {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleOptimization = async () => {
+    try {
+      setOptimizing(true)
+      setError(null)
+      console.log('🔄 Triggering real-time optimization...')
+
+      const result = await triggerOptimization()
+      setOptimizationResult(result)
+
+      console.log('✅ Optimization completed:', result)
+
+      // Refresh dashboard data to show new recommendations
+      await loadDashboardData()
+
+      // Show success message
+      alert(`Optimization completed successfully! Generated ${result.optimization_results?.recommendations?.length || 0} new recommendations.`)
+    } catch (err) {
+      console.error('❌ Optimization failed:', err)
+      setError(err instanceof Error ? err.message : 'Failed to trigger optimization')
+    } finally {
+      setOptimizing(false)
     }
   }
 
@@ -90,11 +116,31 @@ export default function Dashboard() {
               AI-Enhanced Stock Monitoring & Forecasting - Douala General Hospital
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">Last updated</p>
-            <p className="text-sm font-medium text-gray-900">
-              {lastUpdated.toLocaleTimeString()}
-            </p>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handleOptimization}
+              disabled={optimizing}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                optimizing
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+            >
+              {optimizing ? (
+                <>
+                  <div className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Optimizing...
+                </>
+              ) : (
+                <>🚀 Run Optimization</>
+              )}
+            </button>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">Last updated</p>
+              <p className="text-sm font-medium text-gray-900">
+                {lastUpdated.toLocaleTimeString()}
+              </p>
+            </div>
           </div>
         </div>
       </motion.div>

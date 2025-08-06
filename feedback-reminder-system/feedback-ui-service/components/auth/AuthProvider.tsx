@@ -24,6 +24,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!user && !publicRoutes.includes(pathname)) {
         router.push('/login');
       } else if (user && pathname === '/login') {
-        router.push('/');
+        router.push('/dashboard');
       }
     }
   }, [user, isLoading, pathname, router]);
@@ -51,19 +52,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const token = AuthService.getToken();
 
       if (currentUser && token) {
+        // Validate user object has required properties
+        if (!currentUser.role || !currentUser.full_name || !currentUser.email) {
+          // AuthService.getCurrentUser() will handle clearing invalid data
+          setUser(null);
+          return;
+        }
+
         // Verify token is still valid by attempting to refresh
         const newToken = await AuthService.refreshToken();
         if (newToken) {
           setUser(currentUser);
         } else {
-          // Token refresh failed, clear auth state
-          AuthService.logout();
+          // Token refresh failed, clear auth state silently
           setUser(null);
         }
       }
     } catch (error) {
       console.error('Auth initialization failed:', error);
-      AuthService.logout();
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -87,8 +93,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = () => {
+    if (isLoggingOut) return; // Prevent multiple logout calls
+
+    setIsLoggingOut(true);
     AuthService.logout();
     setUser(null);
+    setIsLoggingOut(false);
     router.push('/login');
   };
 

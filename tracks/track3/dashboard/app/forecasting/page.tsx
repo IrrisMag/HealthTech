@@ -22,11 +22,15 @@ export default function ForecastingPage() {
 
   const loadForecasts = async () => {
     try {
+      setLoading(true)
       setError(null)
       const data = await fetchForecasts(forecastDays)
       setForecasts(data)
+      console.log(`✅ Loaded ${data.length} forecast records from real ARIMA models`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load forecasts')
+      console.error('❌ Forecast loading failed:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load forecasts from backend services')
+      setForecasts([]) // Clear any existing data
     } finally {
       setLoading(false)
     }
