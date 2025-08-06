@@ -1,7 +1,15 @@
 "use client";
 
-import LoginForm from "@/components/auth/LoginForm";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  return <LoginForm />;
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect directly to dashboard - no authentication needed
+    router.push('/');
+  }, [router]);
+
+  return null; // Redirecting to dashboard
 }

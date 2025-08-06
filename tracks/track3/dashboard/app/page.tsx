@@ -9,14 +9,8 @@ import OptimizationRecommendations from '@/components/OptimizationRecommendation
 import RealTimeAlerts from '@/components/RealTimeAlerts'
 import { fetchDashboardData, triggerOptimization } from '@/lib/api'
 import { DashboardData } from '@/types'
-import { useAuth } from '@/components/auth/AuthProvider'
-
 export default function Dashboard() {
-  const { user } = useAuth()
-
-  if (!user) {
-    return null; // AuthProvider will handle redirect to login
-  }
+  // No authentication needed - direct access
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

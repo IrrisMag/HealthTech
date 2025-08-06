@@ -15,23 +15,16 @@ import {
   LogOut,
   Users
 } from 'lucide-react'
-import { useAuth } from './auth/AuthProvider'
-
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [showUserMenu, setShowUserMenu] = useState(false)
   const pathname = usePathname()
-  const { user, logout, canManageInventory, canViewReports, canAccessForecasting, canAccessOptimization } = useAuth()
 
-  // Don't show navigation on login page
-  if (pathname === '/login') {
-    return null;
-  }
-
-  // Don't show navigation if not authenticated
-  if (!user) {
-    return null;
-  }
+  // Mock user and permissions - no authentication needed
+  const user = { full_name: "Blood Bank Staff", role: "admin" }
+  const canManageInventory = () => true
+  const canViewReports = () => true
+  const canAccessForecasting = () => true
+  const canAccessOptimization = () => true
 
   const getNavigation = () => {
     const items = [
@@ -127,16 +120,9 @@ export default function Navigation() {
                       {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      logout();
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <LogOut className="w-4 h-4 inline mr-2" />
-                    Sign out
-                  </button>
+                  <div className="px-4 py-2 text-sm text-gray-500">
+                    Blood Bank Dashboard
+                  </div>
                 </div>
               )}
             </div>
@@ -198,24 +184,15 @@ export default function Navigation() {
               </div>
               <div className="ml-3">
                 <div className="text-base font-medium text-gray-800">{user.full_name}</div>
-                <div className="text-sm text-gray-500">{user.email}</div>
+                <div className="text-sm text-gray-500">Douala General Hospital</div>
                 <div className="text-xs text-blue-600">
-                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  Blood Bank System
                 </div>
               </div>
               <div className="ml-auto flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span className="text-xs text-gray-500">Live</span>
               </div>
-            </div>
-            <div className="mt-3 px-4">
-              <button
-                onClick={logout}
-                className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign out
-              </button>
             </div>
           </div>
         </div>
