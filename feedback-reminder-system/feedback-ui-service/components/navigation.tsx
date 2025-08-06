@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Home, MessageSquare, Bot, BarChart3, Calendar, UserPlus, Users, Heart } from "lucide-react";
+import { Home, MessageSquare, Bot, BarChart3, Calendar, UserPlus, Users, Heart, Clock, Droplets, Eye } from "lucide-react";
 
 const Navigation = () => {
   const pathname = usePathname();
@@ -38,12 +38,37 @@ const Navigation = () => {
       items.push({ href: "/analytics", label: "Analytics", icon: BarChart3, feature: "analytics" });
     }
 
+    if (canAccessFeature('charts')) {
+      items.push({ href: "/charts", label: "Charts", icon: BarChart3, feature: "charts" });
+    }
+
     if (canAccessFeature('user-registration')) {
       items.push({ href: "/register", label: "Register Staff", icon: Users, feature: "user-registration" });
     }
 
     if (canAccessFeature('patient-registration')) {
       items.push({ href: "/register-patient", label: "Register Patient", icon: UserPlus, feature: "patient-registration" });
+    }
+
+    // Blood Bank Management - Real Database Operations
+    if (canAccessFeature('blood-bank-dashboard')) {
+      items.push({ href: "/blood-bank", label: "Blood Bank", icon: Heart, feature: "blood-bank-dashboard" });
+    }
+
+    if (canAccessFeature('real-time-monitoring')) {
+      items.push({ href: "/monitoring", label: "Live Monitoring", icon: Eye, feature: "real-time-monitoring" });
+    }
+
+    if (canAccessFeature('donor-management')) {
+      items.push({ href: "/donors", label: "Donors", icon: Users, feature: "donor-management" });
+    }
+
+    if (canAccessFeature('donation-management')) {
+      items.push({ href: "/donations", label: "Donations", icon: Droplets, feature: "donation-management" });
+    }
+
+    if (canAccessFeature('request-management')) {
+      items.push({ href: "/requests", label: "Requests", icon: Clock, feature: "request-management" });
     }
 
     return items;

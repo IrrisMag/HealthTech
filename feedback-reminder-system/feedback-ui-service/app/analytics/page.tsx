@@ -1,8 +1,39 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Users,
+  Heart,
+  Clock,
+  DollarSign,
+  AlertTriangle,
+  CheckCircle,
+  RefreshCw,
+  Download,
+  Calendar,
+  Target,
+  Zap,
+  Brain,
+  MessageSquare
+} from "lucide-react";
+import {
+  getPerformanceAnalytics,
+  getCostSavingsAnalytics,
+  getSupplyDemandAnalytics,
+  getForecastAccuracy,
+  getOptimizationReports,
+  getDashboardMetrics
+} from "@/lib/api";
 
+// Legacy feedback types for backward compatibility
 type FeedbackAnalytics = {
   total_feedback: number;
   sentiment_distribution: {
@@ -29,18 +60,90 @@ type Feedback = {
   timestamp: string;
 };
 
+// New analytics data interface
+interface AnalyticsData {
+  performance?: any;
+  costSavings?: any;
+  supplyDemand?: any;
+  forecastAccuracy?: any;
+  optimizationReports?: any;
+  dashboardMetrics?: any;
+  feedbackAnalytics?: FeedbackAnalytics;
+}
+
 const AnalyticsPage = () => {
-  const [analytics, setAnalytics] = useState<FeedbackAnalytics | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsData>({});
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSentiment, setSelectedSentiment] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
-    fetchAnalytics();
+    loadAnalyticsData();
     fetchFeedbacks();
   }, []);
 
-  const fetchAnalytics = async () => {
+  const loadAnalyticsData = async () => {
+    setLoading(true);
+    try {
+      // Load Track 3 analytics data
+      const [
+        performanceData,
+        costSavingsData,
+        supplyDemandData,
+        forecastAccuracyData,
+        optimizationReportsData,
+        dashboardMetricsData
+      ] = await Promise.allSettled([
+        getPerformanceAnalytics(),
+        getCostSavingsAnalytics(),
+        getSupplyDemandAnalytics(),
+        getForecastAccuracy(),
+        getOptimizationReports(0, 10),
+        getDashboardMetrics()
+      ]);
+
+      const newAnalytics: AnalyticsData = {};
+
+      if (performanceData.status === 'fulfilled') {
+        newAnalytics.performance = performanceData.value;
+      }
+
+      if (costSavingsData.status === 'fulfilled') {
+        newAnalytics.costSavings = costSavingsData.value;
+      }
+
+      if (supplyDemandData.status === 'fulfilled') {
+        newAnalytics.supplyDemand = supplyDemandData.value;
+      }
+
+      if (forecastAccuracyData.status === 'fulfilled') {
+        newAnalytics.forecastAccuracy = forecastAccuracyData.value;
+      }
+
+      if (optimizationReportsData.status === 'fulfilled') {
+        newAnalytics.optimizationReports = optimizationReportsData.value;
+      }
+
+      if (dashboardMetricsData.status === 'fulfilled') {
+        newAnalytics.dashboardMetrics = dashboardMetricsData.value;
+      }
+
+      // Also load legacy feedback analytics
+      await fetchAnalytics(newAnalytics);
+
+      setAnalytics(newAnalytics);
+      setLastUpdated(new Date());
+
+    } catch (error) {
+      console.error('Error loading analytics data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAnalytics = async (existingAnalytics: AnalyticsData = {}) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_FEEDBACK_API_URL}/api/feedback/list`);
       if (!response.ok) {
@@ -67,20 +170,21 @@ const AnalyticsPage = () => {
         }
       });
 
-      // Set analytics data
-      setAnalytics({
+      // Add feedback analytics to existing analytics
+      existingAnalytics.feedbackAnalytics = {
         total_feedback: totalFeedback,
         average_rating: averageRating,
-        sentiment_distribution: { positive: 0, negative: 0, neutral: 0 }, // Will be calculated if sentiment data is available
+        sentiment_distribution: { positive: 0, negative: 0, neutral: 0 },
         department_stats: [],
         top_keywords: [],
         department_breakdown: departmentCounts,
         language_breakdown: {}
-      });
+      };
+
     } catch (error) {
-      console.error("Error fetching analytics:", error);
-      // Set default analytics data on error
-      setAnalytics({
+      console.error("Error fetching feedback analytics:", error);
+      // Set default feedback analytics data on error
+      existingAnalytics.feedbackAnalytics = {
         total_feedback: 0,
         average_rating: 0,
         sentiment_distribution: { positive: 0, negative: 0, neutral: 0 },
@@ -88,7 +192,7 @@ const AnalyticsPage = () => {
         top_keywords: [],
         department_breakdown: {},
         language_breakdown: {}
-      });
+      };
     }
   };
 
