@@ -100,31 +100,13 @@ export default function Navigation() {
               <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
             </button>
 
-            {/* User menu */}
-            <div className="relative">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-2 p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded-lg"
-              >
-                <User className="h-6 w-6" />
-                <span className="text-sm font-medium text-gray-700">{user.full_name}</span>
-              </button>
-
-              {/* User dropdown menu */}
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                  <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-                    <div className="font-medium">{user.full_name}</div>
-                    <div className="text-gray-500">{user.email}</div>
-                    <div className="text-xs text-blue-600 mt-1">
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 text-sm text-gray-500">
-                    Blood Bank Dashboard
-                  </div>
-                </div>
-              )}
+            {/* User info */}
+            <div className="flex items-center space-x-2 p-2">
+              <User className="h-6 w-6 text-gray-400" />
+              <div className="text-sm">
+                <div className="font-medium text-gray-700">{user.full_name}</div>
+                <div className="text-gray-500">Blood Bank Dashboard</div>
+              </div>
             </div>
 
             {/* Status indicator */}
