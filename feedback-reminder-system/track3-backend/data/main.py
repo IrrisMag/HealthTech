@@ -1,0 +1,879 @@
+"""
+Blood Bank Data Ingestion and Integration Service - Track 3
+System Integration and Data Ingestion Layer for AI-Enhanced Blood Bank Monitoring
+"""
+
+import os
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional
+import uuid
+
+from fastapi import FastAPI, HTTPException, Depends, Query, Body
+from fastapi.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
+from database import get_database, startup_database, shutdown_database, convert_objectid, convert_objectid_list
+from models import (
+    DonorDemographics, ClinicalData, BloodDonation, BloodInventory, BloodRequest,
+    DataIngestionResponse, InventoryStatusResponse, DashboardMetrics,
+    BloodType, DonationType, BloodComponentStatus, Priority, ScreeningResult
+)
+from auth_deps import get_current_user
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Environment variables
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+DB_NAME = os.getenv("DB_NAME", "reminderdb_data")
+JWT_SECRET = os.getenv("JWT_SECRET", "your-jwt-secret")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+# Set logging level
+logging.getLogger().setLevel(getattr(logging, LOG_LEVEL.upper()))
+
+app = FastAPI(
+    title="Blood Bank Data Ingestion Service",
+    description=(
+        "System Integration and Data Ingestion Layer for AI-Enhanced Blood Bank "
+        "Stock Monitoring and Forecasting System - Douala General Hospital Track 3"
+    ),
+    version="1.0.0",
+    docs_url="/docs" if ENVIRONMENT == "development" else None,
+    redoc_url="/redoc" if ENVIRONMENT == "development" else None,
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Startup and shutdown events
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database connection on startup"""
+    await startup_database()
+    logger.info("Blood Bank Data Ingestion Service started successfully")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close database connection on shutdown"""
+    await shutdown_database()
+    logger.info("Blood Bank Data Ingestion Service shut down")
+
+
+@app.get("/")
+async def root() -> Dict[str, str]:
+    """Root endpoint."""
+    return {
+        "service": "blood_bank_data_ingestion",
+        "status": "running",
+        "version": "1.0.0",
+        "environment": ENVIRONMENT,
+        "description": "Track 3: AI-Enhanced Blood Bank Stock Monitoring and Forecasting System"
+    }
+
+
+@app.get("/health")
+async def health_check(db: AsyncIOMotorDatabase = Depends(get_database)) -> Dict[str, Any]:
+    """Health check endpoint with database connectivity."""
+    try:
+        # Test database connection
+        await db.command('ping')
+
+        # Get basic statistics
+        collections = await db.list_collection_names()
+
+        return {
+            "status": "healthy",
+            "service": "blood_bank_data_ingestion",
+            "version": "1.0.0",
+            "environment": ENVIRONMENT,
+            "database": {
+                "connected": True,
+                "name": DB_NAME,
+                "collections": len(collections)
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "service": "blood_bank_data_ingestion",
+            "version": "1.0.0",
+            "environment": ENVIRONMENT,
+            "database": {
+                "connected": False,
+                "error": str(e)
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+
+# ============================================================================
+# DONOR MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@app.post("/donors", response_model=DataIngestionResponse)
+async def register_donor(
+    donor_data: DonorDemographics,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> DataIngestionResponse:
+    """Register a new blood donor"""
+    try:
+        # Check if donor already exists
+        existing_donor = await db.donor_demographics.find_one({"donor_id": donor_data.donor_id})
+        if existing_donor:
+            return DataIngestionResponse(
+                success=False,
+                message="Donor already exists",
+                errors=[f"Donor with ID {donor_data.donor_id} already registered"]
+            )
+
+        # Check for duplicate email
+        if donor_data.email:
+            existing_email = await db.donor_demographics.find_one({"email": donor_data.email})
+            if existing_email:
+                return DataIngestionResponse(
+                    success=False,
+                    message="Email already registered",
+                    errors=[f"Email {donor_data.email} is already in use"]
+                )
+
+        # Insert donor data
+        donor_dict = donor_data.dict()
+        result = await db.donor_demographics.insert_one(donor_dict)
+
+        logger.info(f"New donor registered: {donor_data.donor_id} by user {current_user.get('user_id')}")
+
+        return DataIngestionResponse(
+            success=True,
+            message="Donor registered successfully",
+            record_id=str(result.inserted_id)
+        )
+
+    except Exception as e:
+        logger.error(f"Error registering donor: {e}")
+        return DataIngestionResponse(
+            success=False,
+            message="Failed to register donor",
+            errors=[str(e)]
+        )
+
+
+@app.get("/donors/{donor_id}")
+async def get_donor(
+    donor_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Get donor information by ID"""
+    try:
+        donor = await db.donor_demographics.find_one({"donor_id": donor_id})
+        if not donor:
+            raise HTTPException(status_code=404, detail="Donor not found")
+
+        return convert_objectid(donor)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving donor {donor_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve donor")
+
+
+@app.put("/donors/{donor_id}", response_model=DataIngestionResponse)
+async def update_donor(
+    donor_id: str,
+    donor_data: DonorDemographics,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> DataIngestionResponse:
+    """Update donor information"""
+    try:
+        # Ensure donor_id matches
+        if donor_data.donor_id != donor_id:
+            return DataIngestionResponse(
+                success=False,
+                message="Donor ID mismatch",
+                errors=["Donor ID in URL does not match donor ID in data"]
+            )
+
+        # Update timestamp
+        donor_data.updated_at = datetime.utcnow()
+
+        # Update donor
+        result = await db.donor_demographics.update_one(
+            {"donor_id": donor_id},
+            {"$set": donor_data.dict()}
+        )
+
+        if result.matched_count == 0:
+            return DataIngestionResponse(
+                success=False,
+                message="Donor not found",
+                errors=[f"No donor found with ID {donor_id}"]
+            )
+
+        logger.info(f"Donor updated: {donor_id} by user {current_user.get('user_id')}")
+
+        return DataIngestionResponse(
+            success=True,
+            message="Donor updated successfully"
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating donor {donor_id}: {e}")
+        return DataIngestionResponse(
+            success=False,
+            message="Failed to update donor",
+            errors=[str(e)]
+        )
+
+
+@app.get("/donors")
+async def list_donors(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    blood_type: Optional[BloodType] = None,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """List donors with pagination and filtering"""
+    try:
+        # Build query
+        query = {}
+        if blood_type:
+            # Get donors with specific blood type from clinical data
+            clinical_data = await db.clinical_data.find(
+                {"blood_type": blood_type},
+                {"donor_id": 1}
+            ).to_list(length=None)
+            donor_ids = [cd["donor_id"] for cd in clinical_data]
+            query["donor_id"] = {"$in": donor_ids}
+
+        # Get total count
+        total = await db.donor_demographics.count_documents(query)
+
+        # Get donors
+        cursor = db.donor_demographics.find(query).skip(skip).limit(limit).sort("created_at", -1)
+        donors = await cursor.to_list(length=None)
+
+        return {
+            "donors": convert_objectid_list(donors),
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "has_more": skip + limit < total
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing donors: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve donors")
+
+
+# ============================================================================
+# CLINICAL DATA ENDPOINTS
+# ============================================================================
+
+@app.post("/clinical-data", response_model=DataIngestionResponse)
+async def record_clinical_data(
+    clinical_data: ClinicalData,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> DataIngestionResponse:
+    """Record clinical data for a donor"""
+    try:
+        # Verify donor exists
+        donor = await db.donor_demographics.find_one({"donor_id": clinical_data.donor_id})
+        if not donor:
+            return DataIngestionResponse(
+                success=False,
+                message="Donor not found",
+                errors=[f"No donor found with ID {clinical_data.donor_id}"]
+            )
+
+        # Check if clinical data already exists for this donor
+        existing_clinical = await db.clinical_data.find_one({"donor_id": clinical_data.donor_id})
+        if existing_clinical:
+            # Update existing clinical data
+            clinical_data.updated_at = datetime.utcnow()
+            result = await db.clinical_data.update_one(
+                {"donor_id": clinical_data.donor_id},
+                {"$set": clinical_data.dict()}
+            )
+            message = "Clinical data updated successfully"
+        else:
+            # Insert new clinical data
+            result = await db.clinical_data.insert_one(clinical_data.dict())
+            message = "Clinical data recorded successfully"
+
+        logger.info(f"Clinical data recorded for donor: {clinical_data.donor_id} by user {current_user.get('user_id')}")
+
+        return DataIngestionResponse(
+            success=True,
+            message=message,
+            record_id=str(result.inserted_id) if hasattr(result, 'inserted_id') else None
+        )
+
+    except Exception as e:
+        logger.error(f"Error recording clinical data: {e}")
+        return DataIngestionResponse(
+            success=False,
+            message="Failed to record clinical data",
+            errors=[str(e)]
+        )
+
+
+@app.get("/clinical-data/{donor_id}")
+async def get_clinical_data(
+    donor_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Get clinical data for a donor"""
+    try:
+        clinical_data = await db.clinical_data.find_one({"donor_id": donor_id})
+        if not clinical_data:
+            raise HTTPException(status_code=404, detail="Clinical data not found")
+
+        return convert_objectid(clinical_data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving clinical data for donor {donor_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve clinical data")
+
+
+# ============================================================================
+# BLOOD DONATION ENDPOINTS
+# ============================================================================
+
+@app.post("/donations", response_model=DataIngestionResponse)
+async def record_donation(
+    donation_data: BloodDonation,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> DataIngestionResponse:
+    """Record a blood donation"""
+    try:
+        # Verify donor exists and is eligible
+        donor = await db.donor_demographics.find_one({"donor_id": donation_data.donor_id})
+        if not donor:
+            return DataIngestionResponse(
+                success=False,
+                message="Donor not found",
+                errors=[f"No donor found with ID {donation_data.donor_id}"]
+            )
+
+        # Check clinical data and eligibility
+        clinical_data = await db.clinical_data.find_one({"donor_id": donation_data.donor_id})
+        if not clinical_data:
+            return DataIngestionResponse(
+                success=False,
+                message="Clinical data required",
+                errors=["Clinical assessment required before donation"]
+            )
+
+        if not clinical_data.get("eligibility_status", False):
+            return DataIngestionResponse(
+                success=False,
+                message="Donor not eligible",
+                errors=["Donor is not eligible for donation based on clinical assessment"]
+            )
+
+        # Check if donation ID already exists
+        existing_donation = await db.blood_donations.find_one({"donation_id": donation_data.donation_id})
+        if existing_donation:
+            return DataIngestionResponse(
+                success=False,
+                message="Donation already recorded",
+                errors=[f"Donation with ID {donation_data.donation_id} already exists"]
+            )
+
+        # Calculate expiry date based on donation type
+        expiry_days = {
+            DonationType.WHOLE_BLOOD: 35,
+            DonationType.RED_CELLS: 42,
+            DonationType.PLASMA: 365,
+            DonationType.PLATELETS: 5,
+            DonationType.DOUBLE_RED_CELLS: 42
+        }
+
+        donation_data.expiry_date = donation_data.donation_date + timedelta(
+            days=expiry_days.get(donation_data.donation_type, 35)
+        )
+
+        # Insert donation record
+        result = await db.blood_donations.insert_one(donation_data.dict())
+
+        # Create corresponding inventory record
+        inventory_data = BloodInventory(
+            inventory_id=f"INV_{donation_data.donation_id}",
+            donation_id=donation_data.donation_id,
+            blood_type=clinical_data["blood_type"],
+            component_type=donation_data.donation_type,
+            volume=donation_data.volume_collected,
+            collection_date=donation_data.donation_date,
+            expiry_date=donation_data.expiry_date,
+            storage_location=donation_data.storage_location or "Main Storage",
+            storage_temperature=4.0,  # Standard blood storage temperature
+            bag_number=f"BAG_{donation_data.donation_id}"
+        )
+
+        await db.blood_inventory.insert_one(inventory_data.dict())
+
+        logger.info(f"Blood donation recorded: {donation_data.donation_id} by user {current_user.get('user_id')}")
+
+        return DataIngestionResponse(
+            success=True,
+            message="Blood donation recorded successfully",
+            record_id=str(result.inserted_id)
+        )
+
+    except Exception as e:
+        logger.error(f"Error recording donation: {e}")
+        return DataIngestionResponse(
+            success=False,
+            message="Failed to record donation",
+            errors=[str(e)]
+        )
+
+
+@app.get("/donations")
+async def list_donations(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    donor_id: Optional[str] = None,
+    donation_type: Optional[DonationType] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """List blood donations with filtering"""
+    try:
+        # Build query
+        query = {}
+        if donor_id:
+            query["donor_id"] = donor_id
+        if donation_type:
+            query["donation_type"] = donation_type
+        if start_date or end_date:
+            date_query = {}
+            if start_date:
+                date_query["$gte"] = start_date
+            if end_date:
+                date_query["$lte"] = end_date
+            query["donation_date"] = date_query
+
+        # Get total count
+        total = await db.blood_donations.count_documents(query)
+
+        # Get donations
+        cursor = db.blood_donations.find(query).skip(skip).limit(limit).sort("donation_date", -1)
+        donations = await cursor.to_list(length=None)
+
+        return {
+            "donations": convert_objectid_list(donations),
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "has_more": skip + limit < total
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing donations: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve donations")
+
+
+# ============================================================================
+# INVENTORY MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@app.get("/inventory/status", response_model=List[InventoryStatusResponse])
+async def get_inventory_status(
+    blood_type: Optional[BloodType] = None,
+    component_type: Optional[DonationType] = None,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> List[InventoryStatusResponse]:
+    """Get current inventory status by blood type and component"""
+    try:
+        # Build aggregation pipeline
+        match_stage = {"status": {"$in": ["available", "reserved", "near_expiry", "expired"]}}
+        if blood_type:
+            match_stage["blood_type"] = blood_type
+        if component_type:
+            match_stage["component_type"] = component_type
+
+        pipeline = [
+            {"$match": match_stage},
+            {
+                "$group": {
+                    "_id": {
+                        "blood_type": "$blood_type",
+                        "component_type": "$component_type"
+                    },
+                    "total_units": {"$sum": 1},
+                    "available_units": {
+                        "$sum": {"$cond": [{"$eq": ["$status", "available"]}, 1, 0]}
+                    },
+                    "reserved_units": {
+                        "$sum": {"$cond": [{"$eq": ["$status", "reserved"]}, 1, 0]}
+                    },
+                    "near_expiry_units": {
+                        "$sum": {"$cond": [{"$eq": ["$status", "near_expiry"]}, 1, 0]}
+                    },
+                    "expired_units": {
+                        "$sum": {"$cond": [{"$eq": ["$status", "expired"]}, 1, 0]}
+                    }
+                }
+            }
+        ]
+
+        cursor = db.blood_inventory.aggregate(pipeline)
+        results = await cursor.to_list(length=None)
+
+        inventory_status = []
+        for result in results:
+            inventory_status.append(InventoryStatusResponse(
+                blood_type=result["_id"]["blood_type"],
+                component_type=result["_id"]["component_type"],
+                total_units=result["total_units"],
+                available_units=result["available_units"],
+                reserved_units=result["reserved_units"],
+                near_expiry_units=result["near_expiry_units"],
+                expired_units=result["expired_units"],
+                last_updated=datetime.utcnow()
+            ))
+
+        return inventory_status
+
+    except Exception as e:
+        logger.error(f"Error getting inventory status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve inventory status")
+
+
+@app.get("/inventory")
+async def list_inventory(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    blood_type: Optional[BloodType] = None,
+    component_type: Optional[DonationType] = None,
+    status: Optional[BloodComponentStatus] = None,
+    expiring_within_days: Optional[int] = Query(None, ge=1, le=30),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """List inventory items with filtering"""
+    try:
+        # Build query
+        query = {}
+        if blood_type:
+            query["blood_type"] = blood_type
+        if component_type:
+            query["component_type"] = component_type
+        if status:
+            query["status"] = status
+        if expiring_within_days:
+            expiry_threshold = datetime.utcnow() + timedelta(days=expiring_within_days)
+            query["expiry_date"] = {"$lte": expiry_threshold}
+            query["status"] = {"$in": ["available", "reserved"]}
+
+        # Get total count
+        total = await db.blood_inventory.count_documents(query)
+
+        # Get inventory items
+        cursor = db.blood_inventory.find(query).skip(skip).limit(limit).sort("expiry_date", 1)
+        inventory = await cursor.to_list(length=None)
+
+        return {
+            "inventory": convert_objectid_list(inventory),
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "has_more": skip + limit < total
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing inventory: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve inventory")
+
+
+@app.put("/inventory/{inventory_id}/status", response_model=DataIngestionResponse)
+async def update_inventory_status(
+    inventory_id: str,
+    status: BloodComponentStatus = Body(..., embed=True),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> DataIngestionResponse:
+    """Update inventory item status"""
+    try:
+        result = await db.blood_inventory.update_one(
+            {"inventory_id": inventory_id},
+            {
+                "$set": {
+                    "status": status,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+
+        if result.matched_count == 0:
+            return DataIngestionResponse(
+                success=False,
+                message="Inventory item not found",
+                errors=[f"No inventory item found with ID {inventory_id}"]
+            )
+
+        logger.info(f"Inventory status updated: {inventory_id} -> {status} by user {current_user.get('user_id')}")
+
+        return DataIngestionResponse(
+            success=True,
+            message="Inventory status updated successfully"
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating inventory status: {e}")
+        return DataIngestionResponse(
+            success=False,
+            message="Failed to update inventory status",
+            errors=[str(e)]
+        )
+
+
+# ============================================================================
+# BLOOD REQUEST ENDPOINTS
+# ============================================================================
+
+@app.post("/requests", response_model=DataIngestionResponse)
+async def create_blood_request(
+    request_data: BloodRequest,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> DataIngestionResponse:
+    """Create a new blood request"""
+    try:
+        # Check if request ID already exists
+        existing_request = await db.blood_requests.find_one({"request_id": request_data.request_id})
+        if existing_request:
+            return DataIngestionResponse(
+                success=False,
+                message="Request already exists",
+                errors=[f"Request with ID {request_data.request_id} already exists"]
+            )
+
+        # Insert request
+        result = await db.blood_requests.insert_one(request_data.dict())
+
+        logger.info(f"Blood request created: {request_data.request_id} by user {current_user.get('user_id')}")
+
+        return DataIngestionResponse(
+            success=True,
+            message="Blood request created successfully",
+            record_id=str(result.inserted_id)
+        )
+
+    except Exception as e:
+        logger.error(f"Error creating blood request: {e}")
+        return DataIngestionResponse(
+            success=False,
+            message="Failed to create blood request",
+            errors=[str(e)]
+        )
+
+
+@app.get("/requests")
+async def list_blood_requests(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    status: Optional[str] = None,
+    priority: Optional[Priority] = None,
+    blood_type: Optional[BloodType] = None,
+    department: Optional[str] = None,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """List blood requests with filtering"""
+    try:
+        # Build query
+        query = {}
+        if status:
+            query["status"] = status
+        if priority:
+            query["priority"] = priority
+        if blood_type:
+            query["blood_type"] = blood_type
+        if department:
+            query["requesting_department"] = {"$regex": department, "$options": "i"}
+
+        # Get total count
+        total = await db.blood_requests.count_documents(query)
+
+        # Get requests
+        cursor = db.blood_requests.find(query).skip(skip).limit(limit).sort("requested_date", -1)
+        requests = await cursor.to_list(length=None)
+
+        return {
+            "requests": convert_objectid_list(requests),
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "has_more": skip + limit < total
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing blood requests: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve blood requests")
+
+
+# ============================================================================
+# DASHBOARD AND ANALYTICS ENDPOINTS
+# ============================================================================
+
+@app.get("/dashboard/metrics", response_model=DashboardMetrics)
+async def get_dashboard_metrics(
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> DashboardMetrics:
+    """Get dashboard metrics for blood bank monitoring"""
+    try:
+        # Get current date ranges
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        month_start = today.replace(day=1)
+
+        # Total donors
+        total_donors = await db.donor_demographics.count_documents({})
+
+        # Donations today
+        donations_today = await db.blood_donations.count_documents({
+            "donation_date": {"$gte": today}
+        })
+
+        # Donations this month
+        donations_this_month = await db.blood_donations.count_documents({
+            "donation_date": {"$gte": month_start}
+        })
+
+        # Total inventory units
+        total_inventory = await db.blood_inventory.count_documents({
+            "status": {"$in": ["available", "reserved", "near_expiry"]}
+        })
+
+        # Units expiring soon (within 7 days)
+        expiry_threshold = datetime.utcnow() + timedelta(days=7)
+        units_expiring_soon = await db.blood_inventory.count_documents({
+            "expiry_date": {"$lte": expiry_threshold},
+            "status": {"$in": ["available", "reserved"]}
+        })
+
+        # Pending requests
+        pending_requests = await db.blood_requests.count_documents({
+            "status": "pending"
+        })
+
+        # Emergency requests
+        emergency_requests = await db.blood_requests.count_documents({
+            "priority": "emergency",
+            "status": {"$in": ["pending", "approved"]}
+        })
+
+        # Blood type distribution
+        blood_type_pipeline = [
+            {"$match": {"status": {"$in": ["available", "reserved", "near_expiry"]}}},
+            {"$group": {"_id": "$blood_type", "count": {"$sum": 1}}}
+        ]
+        blood_type_cursor = db.blood_inventory.aggregate(blood_type_pipeline)
+        blood_type_results = await blood_type_cursor.to_list(length=None)
+        blood_type_distribution = {result["_id"]: result["count"] for result in blood_type_results}
+
+        # Component distribution
+        component_pipeline = [
+            {"$match": {"status": {"$in": ["available", "reserved", "near_expiry"]}}},
+            {"$group": {"_id": "$component_type", "count": {"$sum": 1}}}
+        ]
+        component_cursor = db.blood_inventory.aggregate(component_pipeline)
+        component_results = await component_cursor.to_list(length=None)
+        component_distribution = {result["_id"]: result["count"] for result in component_results}
+
+        return DashboardMetrics(
+            total_donors=total_donors,
+            total_donations_today=donations_today,
+            total_donations_this_month=donations_this_month,
+            total_inventory_units=total_inventory,
+            units_expiring_soon=units_expiring_soon,
+            pending_requests=pending_requests,
+            emergency_requests=emergency_requests,
+            blood_type_distribution=blood_type_distribution,
+            component_distribution=component_distribution
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting dashboard metrics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve dashboard metrics")
+
+
+# ============================================================================
+# DHIS2 INTEGRATION ENDPOINTS
+# ============================================================================
+
+@app.get("/dhis2/test-connection")
+async def test_dhis2_connection(
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Test DHIS2 connection"""
+    try:
+        from dhis2_integration import DHIS2Client
+
+        client = DHIS2Client()
+        result = await client.test_connection()
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error testing DHIS2 connection: {e}")
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+
+@app.post("/dhis2/sync")
+async def sync_to_dhis2(
+    sync_date: Optional[datetime] = Body(None, embed=True),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Sync blood bank data to DHIS2"""
+    try:
+        from dhis2_integration import DHIS2SyncService
+
+        sync_service = DHIS2SyncService(db)
+        sync_record = await sync_service.sync_daily_data(sync_date)
+
+        return {
+            "sync_id": sync_record.sync_id,
+            "status": sync_record.sync_status,
+            "records_sent": sync_record.records_sent,
+            "error_message": sync_record.error_message,
+            "sync_started": sync_record.sync_started,
+            "sync_completed": sync_record.sync_completed
+        }
+
+    except Exception as e:
+        logger.error(f"Error syncing to DHIS2: {e}")
+        return {
+            "status": "error",
+            "error": str(e)
+        }

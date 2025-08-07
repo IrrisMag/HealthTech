@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Users, Phone, Calendar, Heart, Filter, Search } from 'lucide-react'
-import { fetchDonors } from '@/lib/api'
+import { Users, Phone, Calendar, Heart, Filter, Search, Plus, Edit, Trash2, Save, X } from 'lucide-react'
+import { fetchDonors, createDonor, updateDonor, deleteDonor } from '@/lib/api'
 
 interface Donor {
   id: string
@@ -25,6 +25,16 @@ export default function DonorsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterBloodType, setFilterBloodType] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [editingDonor, setEditingDonor] = useState<Donor | null>(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    gender: '',
+    blood_type: '',
+    phone: '',
+    eligibility_status: 'eligible'
+  })
 
   const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 

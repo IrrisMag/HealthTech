@@ -27,14 +27,32 @@ export default function BloodInventoryChart({ data }: BloodInventoryChartProps) 
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`)
 
-    // Prepare data
-    const bloodTypes = data.blood_types.map(bt => ({
-      type: bt.type,
-      current: bt.current_stock,
-      safety: bt.safety_stock,
-      reorder: bt.reorder_point,
-      status: bt.status
-    }))
+    // Prepare data - handle both blood_types array and blood_type_distribution object
+    let bloodTypes: any[] = []
+
+    if (data.blood_types && Array.isArray(data.blood_types)) {
+      // Use blood_types array if available
+      bloodTypes = data.blood_types.map(bt => ({
+        type: bt.type,
+        current: bt.current_stock,
+        safety: bt.safety_stock,
+        reorder: bt.reorder_point,
+        status: bt.status,
+        trend: bt.trend || 'stable'
+      }))
+    } else if (data.metrics?.blood_type_distribution) {
+      // Fallback to blood_type_distribution from metrics
+      bloodTypes = Object.entries(data.metrics.blood_type_distribution).map(([type, count]) => ({
+        type,
+        current: count as number,
+        safety: Math.floor((count as number) * 0.3), // 30% safety stock
+        reorder: Math.floor((count as number) * 0.2), // 20% reorder point
+        status: (count as number) < 5 ? 'critical' : (count as number) < 10 ? 'low' : 'adequate',
+        trend: 'stable'
+      }))
+    }
+
+    if (bloodTypes.length === 0) return
 
     // Color scale based on status
     const colorScale = d3.scaleOrdinal<string>()

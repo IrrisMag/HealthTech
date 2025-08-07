@@ -1,6 +1,7 @@
 [build]
+  base = "feedback-reminder-system/feedback-ui-service"
   command = "npm run build"
-  publish = "out"
+  publish = "feedback-reminder-system/feedback-ui-service/out"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -9,6 +10,7 @@
   # Correct API URLs for HealthTech Platform
   NEXT_PUBLIC_TRACK1_API_URL = "https://track1-production.up.railway.app"
   NEXT_PUBLIC_TRACK2_API_URL = "https://healthtech-production-4917.up.railway.app"
+  NEXT_PUBLIC_TRACK3_API_URL = "https://track3-blood-bank-backend-production.up.railway.app"
   NEXT_PUBLIC_AUTH_API_URL = "https://track1-production.up.railway.app"
   NEXT_PUBLIC_FEEDBACK_API_URL = "https://track1-production.up.railway.app"
   NEXT_PUBLIC_REMINDER_API_URL = "https://track1-production.up.railway.app"

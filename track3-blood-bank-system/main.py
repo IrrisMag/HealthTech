@@ -17,12 +17,14 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorClient
 import httpx
+# ML imports for ARIMA forecasting
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
 from statsmodels.tsa.arima.model import ARIMA
-import xgboost as xgb
-from pulp import *
+# Optional imports (not used in current implementation)
+# from sklearn.ensemble import RandomForestRegressor
+# import xgboost as xgb
+# from pulp import *
 from scipy.optimize import minimize
 
 # Configure logging
@@ -268,8 +270,8 @@ class ForecastingEngine:
                     "date": forecast_date,
                     "predicted_demand": max(0, int(forecast[i])),
                     "confidence_level": 0.95,
-                    "lower_bound": max(0, int(confidence_intervals.iloc[i, 0])),
-                    "upper_bound": int(confidence_intervals.iloc[i, 1])
+                    "lower_bound": max(0, int(confidence_intervals[i, 0])),
+                    "upper_bound": int(confidence_intervals[i, 1])
                 })
             
             return {

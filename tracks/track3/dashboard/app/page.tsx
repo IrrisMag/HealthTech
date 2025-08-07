@@ -5,6 +5,8 @@ import { motion } from 'framer-motion'
 import DashboardMetrics from '@/components/DashboardMetrics'
 import BloodInventoryChart from '@/components/BloodInventoryChart'
 import ForecastingChart from '@/components/ForecastingChart'
+import BloodTypeDistributionChart from '@/components/BloodTypeDistributionChart'
+import ComponentDistributionChart from '@/components/ComponentDistributionChart'
 import OptimizationRecommendations from '@/components/OptimizationRecommendations'
 import RealTimeAlerts from '@/components/RealTimeAlerts'
 import { fetchDashboardData, triggerOptimization } from '@/lib/api'
@@ -170,13 +172,34 @@ export default function Dashboard() {
           <BloodInventoryChart data={data} />
         </motion.div>
 
-        {/* Forecasting Chart */}
+        {/* Blood Type Distribution Chart */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
+          <BloodTypeDistributionChart data={data} />
+        </motion.div>
+      </div>
+
+      {/* Second Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Forecasting Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5 }}
+        >
           <ForecastingChart data={data} />
+        </motion.div>
+
+        {/* Component Distribution Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <ComponentDistributionChart data={data} />
         </motion.div>
       </div>
 
@@ -184,7 +207,7 @@ export default function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.7 }}
       >
         <OptimizationRecommendations data={data} />
       </motion.div>

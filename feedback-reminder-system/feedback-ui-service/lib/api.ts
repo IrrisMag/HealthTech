@@ -8,7 +8,7 @@ const TRANSLATION_API_URL = process.env.NEXT_PUBLIC_TRANSLATION_API_URL;
 // Track API URLs - Production endpoints
 const TRACK1_API_URL = process.env.NEXT_PUBLIC_TRACK1_API_URL || 'https://track1-production.up.railway.app';
 const TRACK2_API_URL = 'https://healthtech-production-4917.up.railway.app';
-const TRACK3_API_URL = process.env.NEXT_PUBLIC_TRACK3_API_URL || 'https://healthtech-production-e602.up.railway.app';
+const TRACK3_API_URL = process.env.NEXT_PUBLIC_TRACK3_API_URL || 'https://track3-blood-bank-backend-production.up.railway.app';
 
 // API Configuration function
 export function getApiConfig() {

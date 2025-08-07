@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navigation from "@/components/navigation";
+import Sidebar from "@/components/sidebar";
 
 export const metadata: Metadata = {
   title: "HealthTech Platform - Douala General Hospital",
-  description: "Patient Feedback & AI Health Assistant System",
+  description: "Integrated Healthcare Management System - Patient Communication, AI Assistant & Blood Bank",
 };
 
 export default function RootLayout({
@@ -15,8 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased" style={{ fontFamily: 'system-ui, sans-serif' }}>
-        <Navigation />
-        {children}
+        <Sidebar>
+          {children}
+        </Sidebar>
       </body>
     </html>
   );

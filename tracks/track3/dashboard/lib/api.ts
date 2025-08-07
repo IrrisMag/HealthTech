@@ -396,3 +396,98 @@ export const generateReport = async (reportType: string, filters?: any): Promise
     throw new Error('Failed to generate report. Please check if the reporting service is running.')
   }
 }
+
+// Donors CRUD Operations
+export const fetchDonors = async (skip = 0, limit = 50, bloodType?: string) => {
+  try {
+    const params = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+      ...(bloodType && { blood_type: bloodType })
+    })
+
+    const response = await track3Api.get(`/donors?${params}`)
+    return response.data.donors || []
+  } catch (error) {
+    console.error('❌ Failed to fetch donors:', error)
+    throw new Error('Failed to fetch donors')
+  }
+}
+
+export const createDonor = async (donorData: any) => {
+  try {
+    const response = await track3Api.post('/donors', donorData)
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to create donor:', error)
+    throw new Error('Failed to create donor')
+  }
+}
+
+export const updateDonor = async (donorId: string, donorData: any) => {
+  try {
+    const response = await track3Api.put(`/donors/${donorId}`, donorData)
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to update donor:', error)
+    throw new Error('Failed to update donor')
+  }
+}
+
+export const deleteDonor = async (donorId: string) => {
+  try {
+    const response = await track3Api.delete(`/donors/${donorId}`)
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to delete donor:', error)
+    throw new Error('Failed to delete donor')
+  }
+}
+
+// Donations CRUD Operations
+export const fetchDonations = async (skip = 0, limit = 50, status?: string, bloodType?: string) => {
+  try {
+    const params = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+      ...(status && { status }),
+      ...(bloodType && { blood_type: bloodType })
+    })
+
+    const response = await track3Api.get(`/donations?${params}`)
+    return response.data.donations || []
+  } catch (error) {
+    console.error('❌ Failed to fetch donations:', error)
+    throw new Error('Failed to fetch donations')
+  }
+}
+
+export const createDonation = async (donationData: any) => {
+  try {
+    const response = await track3Api.post('/donations', donationData)
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to create donation:', error)
+    throw new Error('Failed to create donation')
+  }
+}
+
+export const updateDonation = async (donationId: string, donationData: any) => {
+  try {
+    const response = await track3Api.put(`/donations/${donationId}`, donationData)
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to update donation:', error)
+    throw new Error('Failed to update donation')
+  }
+}
+
+export const deleteDonation = async (donationId: string) => {
+  try {
+    const response = await track3Api.delete(`/donations/${donationId}`)
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to delete donation:', error)
+    throw new Error('Failed to delete donation')
+  }
+}

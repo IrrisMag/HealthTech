@@ -28,10 +28,22 @@ export default function ForecastingChart({ data }: ForecastingChartProps) {
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`)
 
-    // Filter data for selected blood type
-    const forecastData = data.forecasts
-      .filter(f => f.blood_type === selectedBloodType)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    // Filter data for selected blood type - handle both array and object formats
+    let forecastData: any[] = []
+
+    if (data.forecasts && Array.isArray(data.forecasts)) {
+      forecastData = data.forecasts
+        .filter(f => f.blood_type === selectedBloodType)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    } else if (data.forecasts && typeof data.forecasts === 'object') {
+      // Handle object format from backend API
+      const bloodTypeForecasts = (data.forecasts as any)[selectedBloodType]
+      if (bloodTypeForecasts && Array.isArray(bloodTypeForecasts)) {
+        forecastData = bloodTypeForecasts
+          .map((f: any) => ({ ...f, blood_type: selectedBloodType }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      }
+    }
 
     if (forecastData.length === 0) return
 
