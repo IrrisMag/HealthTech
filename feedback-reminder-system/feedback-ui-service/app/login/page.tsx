@@ -46,30 +46,115 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // For demo purposes, we'll simulate login
-      // In production, this would call the actual authentication API
-      
       if (!formData.username || !formData.password || !formData.role) {
         throw new Error("Please fill in all fields");
       }
 
-      // Simulate API call delay
+      // Check for jury account credentials first
+      if (formData.username === "dswb" && formData.password === "12345678") {
+        const userData = {
+          username: "dswb",
+          role: formData.role || "admin",
+          full_name: "DSWB Jury Member",
+          department: "Evaluation Committee",
+          loginTime: new Date().toISOString(),
+          isJuryAccount: true
+        };
+
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('isAuthenticated', 'true');
+        router.push('/dashboard');
+        return;
+      }
+
+      // Try real authentication with Track 1 auth service FIRST
+      try {
+        console.log('Attempting real authentication with Track 1 API...');
+        const authResponse = await fetch('https://track1-production.up.railway.app/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.username,
+            password: formData.password,
+          }),
+        });
+
+        console.log('Auth response status:', authResponse.status);
+
+        if (authResponse.ok) {
+          const authData = await authResponse.json();
+          console.log('Real authentication successful!');
+
+          // Store real auth data
+          const userData = {
+            username: authData.user?.email || formData.username,
+            role: authData.user?.role || formData.role,
+            full_name: authData.user?.full_name || formData.username,
+            department: authData.user?.department || "General",
+            employee_id: authData.user?.employee_id,
+            loginTime: new Date().toISOString(),
+            access_token: authData.access_token,
+            refresh_token: authData.refresh_token,
+            isRealAuth: true
+          };
+
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('access_token', authData.access_token);
+          localStorage.setItem('refresh_token', authData.refresh_token);
+
+          router.push('/dashboard');
+          return;
+        } else {
+          console.log('Real auth failed, trying demo accounts...');
+        }
+      } catch (authError) {
+        console.log('Auth service error:', authError);
+        console.log('Falling back to demo authentication');
+      }
+
+      // Demo accounts for testing (fallback)
+      const demoAccounts = {
+        "demo_admin": { password: "demo123", role: "admin", name: "Demo Administrator" },
+        "demo_doctor": { password: "demo123", role: "doctor", name: "Demo Doctor" },
+        "demo_nurse": { password: "demo123", role: "nurse", name: "Demo Nurse" },
+        "demo_patient": { password: "demo123", role: "patient", name: "Demo Patient" }
+      };
+
+      const demoAccount = demoAccounts[formData.username as keyof typeof demoAccounts];
+      if (demoAccount && formData.password === demoAccount.password) {
+        console.log('Demo account authentication successful');
+        const userData = {
+          username: formData.username,
+          role: demoAccount.role,
+          full_name: demoAccount.name,
+          loginTime: new Date().toISOString(),
+          isDemoAuth: true
+        };
+
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('isAuthenticated', 'true');
+        router.push('/dashboard');
+        return;
+      }
+
+      // Fallback authentication for demo purposes
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Store user info in localStorage for demo
       const userData = {
         username: formData.username,
         role: formData.role,
         full_name: formData.username,
+        department: "General",
         loginTime: new Date().toISOString()
       };
 
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('isAuthenticated', 'true');
-
-      // Redirect to dashboard
       router.push('/dashboard');
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -222,8 +307,29 @@ export default function LoginPage() {
               </button>
             </form>
 
+            {/* Jury Access */}
+            <div className="mt-6 pt-6 border-t border-blue-200 bg-blue-50 rounded-lg p-4">
+              <p className="text-sm font-semibold text-blue-800 text-center mb-3">🏆 Jury Access</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({
+                    username: "dswb",
+                    password: "12345678",
+                    role: "admin"
+                  });
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors"
+              >
+                🎯 Quick Jury Login (dswb)
+              </button>
+              <p className="text-xs text-blue-600 text-center mt-2">
+                Username: dswb | Password: 12345678
+              </p>
+            </div>
+
             {/* Demo Login Options */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-sm font-semibold text-gray-700 text-center mb-4">Quick Demo Access for Testing:</p>
               <div className="grid grid-cols-2 gap-3">
                 <button

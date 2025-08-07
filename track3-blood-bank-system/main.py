@@ -11,9 +11,10 @@ from typing import List, Optional, Dict, Any
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorClient
 import httpx
@@ -94,14 +95,23 @@ class DatabaseManager:
     async def get_donors_data(self, skip: int = 0, limit: int = 50, blood_type: str = None):
         """Get donors with filtering"""
         try:
+            if not self.database:
+                logger.error("Database not initialized")
+                return {"donors": [], "total_count": 0, "status": "error", "error": "Database not connected"}
+
             query = {}
             if blood_type:
                 query["blood_type"] = blood_type
-                
+
             cursor = self.database.donors.find(query).skip(skip).limit(limit)
             donors = await cursor.to_list(length=None)
             total_count = await self.database.donors.count_documents(query)
-            
+
+            # Convert ObjectId to string for JSON serialization
+            for donor in donors:
+                if "_id" in donor:
+                    donor["_id"] = str(donor["_id"])
+
             return {
                 "donors": donors,
                 "total_count": total_count,
@@ -172,16 +182,25 @@ class DatabaseManager:
     async def get_blood_requests(self, skip: int = 0, limit: int = 50, status: str = None, urgency: str = None):
         """Get blood requests with filtering"""
         try:
+            if not self.database:
+                logger.error("Database not initialized")
+                return {"requests": [], "total_count": 0, "status": "error", "error": "Database not connected"}
+
             query = {}
             if status:
                 query["status"] = status
             if urgency:
                 query["urgency_level"] = urgency
-                
+
             cursor = self.database.blood_requests.find(query).skip(skip).limit(limit)
             requests = await cursor.to_list(length=None)
             total_count = await self.database.blood_requests.count_documents(query)
-            
+
+            # Convert ObjectId to string for JSON serialization
+            for request in requests:
+                if "_id" in request:
+                    request["_id"] = str(request["_id"])
+
             return {
                 "requests": requests,
                 "total_count": total_count,
@@ -377,14 +396,60 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS middleware - More explicit configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://healthtech-platform-fresh.netlify.app",
+        "https://track3-blood-bank-dashboard.netlify.app",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "*"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Global exception handlers to ensure CORS headers are always sent
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle all unhandled exceptions with CORS headers"""
+    logger.error(f"Unhandled exception: {exc}")
+
+    response = JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error",
+            "message": str(exc),
+            "timestamp": datetime.now().isoformat()
+        }
+    )
+
+    # Ensure CORS headers are present
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+
+    return response
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle HTTP exceptions with CORS headers"""
+    response = JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": exc.detail,
+            "timestamp": datetime.now().isoformat()
+        }
+    )
+
+    # Ensure CORS headers are present
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+
+    return response
 
 # Health check endpoint
 @app.get("/")
@@ -519,12 +584,27 @@ async def get_performance_analytics():
 async def get_dashboard_metrics():
     """Get dashboard metrics"""
     try:
+        if not db_manager or not db_manager.database:
+            logger.error("Database manager not initialized")
+            # Return fallback metrics if database is not available
+            metrics = {
+                "total_donors": 0,
+                "total_inventory_units": 0,
+                "available_units": 0,
+                "pending_requests": 0,
+                "system_health": "warning",
+                "data_source": "fallback",
+                "last_updated": datetime.now().isoformat(),
+                "error": "Database not connected"
+            }
+            return {"metrics": metrics, "status": "warning"}
+
         # Get real counts from database
         total_donors = await db_manager.database.donors.count_documents({})
         total_inventory = await db_manager.database.inventory.count_documents({})
         available_units = await db_manager.database.inventory.count_documents({"status": "available"})
         pending_requests = await db_manager.database.blood_requests.count_documents({"status": "pending"})
-        
+
         metrics = {
             "total_donors": total_donors,
             "total_inventory_units": total_inventory,
@@ -536,7 +616,19 @@ async def get_dashboard_metrics():
         }
         return {"metrics": metrics, "status": "success"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error getting dashboard metrics: {e}")
+        # Return fallback metrics on error
+        metrics = {
+            "total_donors": 0,
+            "total_inventory_units": 0,
+            "available_units": 0,
+            "pending_requests": 0,
+            "system_health": "error",
+            "data_source": "fallback",
+            "last_updated": datetime.now().isoformat(),
+            "error": str(e)
+        }
+        return {"metrics": metrics, "status": "error"}
 
 if __name__ == "__main__":
     import uvicorn

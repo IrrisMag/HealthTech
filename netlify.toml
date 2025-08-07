@@ -1,7 +1,7 @@
 [build]
   base = "feedback-reminder-system/feedback-ui-service"
   command = "npm run build"
-  publish = "feedback-reminder-system/feedback-ui-service/out"
+  publish = "out"
 
 [build.environment]
   NODE_VERSION = "18"

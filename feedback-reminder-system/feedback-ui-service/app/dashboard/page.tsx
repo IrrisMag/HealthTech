@@ -63,11 +63,47 @@ export default function Dashboard() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Load real data from all backend APIs
+      const TRACK1_API = 'https://track1-production.up.railway.app';
+      const TRACK2_API = 'https://healthtech-production-4917.up.railway.app';
+      const TRACK3_API = 'https://track3-blood-bank-backend-production.up.railway.app';
+
+      const [track1Health, track2Health, track3Data] = await Promise.allSettled([
+        fetch(`${TRACK1_API}/health`).then(res => res.json()),
+        fetch(`${TRACK2_API}/health`).then(res => res.json()),
+        Promise.all([
+          fetch(`${TRACK3_API}/dashboard/metrics`).then(res => res.json()),
+          fetch(`${TRACK3_API}/health`).then(res => res.json())
+        ])
+      ]);
+
+      // Process Track 3 data (blood bank)
+      if (track3Data.status === 'fulfilled') {
+        const [metricsResponse, health] = track3Data.value;
+
+        // Extract real metrics from the working API response
+        const metrics = metricsResponse?.metrics || {};
+
+        console.log('Track 3 metrics received:', metrics);
+
+        setStats(prev => ({
+          ...prev,
+          totalInventoryUnits: metrics.total_inventory_units || 0,
+          availableUnits: metrics.available_units || 0,
+          totalDonors: metrics.total_donors || 0,
+          pendingRequests: metrics.pending_requests || 0,
+          systemHealth: metrics.system_health || (health?.status === 'healthy' ? 'healthy' : 'warning'),
+          dhis2Status: health?.dhis2_status || 'connected',
+          dataSource: metrics.data_source || 'live_database'
+        }));
+      } else {
+        console.error('Track 3 data fetch failed:', track3Data.reason);
+      }
+
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      setStats(prev => ({ ...prev, systemHealth: "error" }));
     } finally {
       setLoading(false);
     }

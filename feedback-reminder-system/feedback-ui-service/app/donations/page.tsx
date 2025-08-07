@@ -449,6 +449,120 @@ export default function DonationsManagementPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Record Donation Modal */}
+        {showAddForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Record New Donation</h3>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target as HTMLFormElement);
+                const donationData = {
+                  donor_id: formData.get('donor_id') as string,
+                  blood_type: formData.get('blood_type') as string,
+                  donation_type: formData.get('donation_type') as string,
+                  volume_ml: parseInt(formData.get('volume_ml') as string),
+                  collection_date: formData.get('collection_date') as string,
+                  storage_location: formData.get('storage_location') as string,
+                };
+                handleRecordDonation(donationData);
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Donor ID</label>
+                    <input
+                      name="donor_id"
+                      type="text"
+                      required
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Enter donor ID"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Blood Type</label>
+                    <select
+                      name="blood_type"
+                      required
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="">Select blood type</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Donation Type</label>
+                    <select
+                      name="donation_type"
+                      required
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="">Select donation type</option>
+                      <option value="whole_blood">Whole Blood</option>
+                      <option value="plasma">Plasma</option>
+                      <option value="platelets">Platelets</option>
+                      <option value="red_cells">Red Blood Cells</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Volume (ml)</label>
+                    <input
+                      name="volume_ml"
+                      type="number"
+                      required
+                      min="100"
+                      max="500"
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Enter volume in ml"
+                      defaultValue="450"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Collection Date</label>
+                    <input
+                      name="collection_date"
+                      type="datetime-local"
+                      required
+                      className="w-full p-2 border rounded-md"
+                      defaultValue={new Date().toISOString().slice(0, 16)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Storage Location</label>
+                    <input
+                      name="storage_location"
+                      type="text"
+                      required
+                      className="w-full p-2 border rounded-md"
+                      placeholder="e.g., Refrigerator A-1"
+                    />
+                  </div>
+                </div>
+                <div className="flex space-x-2 mt-6">
+                  <Button type="submit" className="flex-1 bg-red-600 hover:bg-red-700">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Record Donation
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowAddForm(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

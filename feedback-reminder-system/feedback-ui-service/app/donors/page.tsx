@@ -396,6 +396,112 @@ export default function DonorManagementPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Add Donor Modal */}
+        {showAddForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold mb-4">Add New Donor</h3>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target as HTMLFormElement);
+                const donorData = {
+                  first_name: formData.get('first_name') as string,
+                  last_name: formData.get('last_name') as string,
+                  blood_type: formData.get('blood_type') as string,
+                  phone: formData.get('phone') as string,
+                  email: formData.get('email') as string,
+                  date_of_birth: formData.get('date_of_birth') as string,
+                };
+                handleAddDonor(donorData);
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">First Name</label>
+                    <input
+                      name="first_name"
+                      type="text"
+                      required
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Enter first name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Last Name</label>
+                    <input
+                      name="last_name"
+                      type="text"
+                      required
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Enter last name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Blood Type</label>
+                    <select
+                      name="blood_type"
+                      required
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="">Select blood type</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Phone</label>
+                    <input
+                      name="phone"
+                      type="tel"
+                      required
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email</label>
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Date of Birth</label>
+                    <input
+                      name="date_of_birth"
+                      type="date"
+                      required
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+                </div>
+                <div className="flex space-x-2 mt-6">
+                  <Button type="submit" className="flex-1">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Donor
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowAddForm(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
